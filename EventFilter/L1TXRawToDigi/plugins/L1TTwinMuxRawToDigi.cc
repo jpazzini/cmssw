@@ -472,7 +472,7 @@ void L1TTwinMuxRawToDigi::processFed( int twinMuxFed,
   
       else if ( selector == 0x3 ) { //etha word
        
-        int posALL, posBTI[7], qualBTI[7];
+        int posBTI[7], qualBTI[7];
     
         int mb3_eta    = ( dataWordSub & 0xFF );        // positions  0 -> 7
         int mb2_eta    = ( dataWordSub >> 16 ) & 0xFF;  // positions 16 -> 23
@@ -492,7 +492,6 @@ void L1TTwinMuxRawToDigi::processFed( int twinMuxFed,
                               << "mb3_eta_HQ " <<  mb3_eta_HQ   << '\n';
         
         //MB1
-        posALL    = (mb1_eta & 0x7F);
         posBTI[0] = (mb1_eta & 0x01);
         posBTI[1] = ((mb1_eta & 0x02)>>1);
         posBTI[2] = ((mb1_eta & 0x04)>>2);
@@ -509,12 +508,9 @@ void L1TTwinMuxRawToDigi::processFed( int twinMuxFed,
         qualBTI[5] = ((mb1_eta_HQ & 0x20)>>5);
         qualBTI[6] = (((mb1_eta_HQ & 0x40)>>6) || ((mb1_eta_HQ & 0x80)>>7));
 
-        if ( posALL ) {
-            theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 1, posBTI, qualBTI) );
-        }
+        theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 1, posBTI, qualBTI) );
         
         //MB2
-        posALL    = (mb2_eta & 0x7F);
         posBTI[0] = (mb2_eta & 0x01);
         posBTI[1] = ((mb2_eta & 0x02)>>1);
         posBTI[2] = ((mb2_eta & 0x04)>>2);
@@ -531,12 +527,9 @@ void L1TTwinMuxRawToDigi::processFed( int twinMuxFed,
         qualBTI[5] = ((mb2_eta_HQ & 0x20)>>5);
         qualBTI[6] = (((mb2_eta_HQ & 0x40)>>6) || ((mb2_eta_HQ & 0x80)>>7));
 
-        if ( posALL ) {
-            theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 2, posBTI, qualBTI) );
-        }
+        theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 2, posBTI, qualBTI) );
         
         //MB3
-        posALL    = (mb3_eta & 0x7F);
         posBTI[0] = (mb3_eta & 0x01);
         posBTI[1] = ((mb3_eta & 0x02)>>1);
         posBTI[2] = ((mb3_eta & 0x04)>>2);
@@ -553,9 +546,7 @@ void L1TTwinMuxRawToDigi::processFed( int twinMuxFed,
         qualBTI[5] = ((mb3_eta_HQ & 0x20)>>5);
         qualBTI[6] = (((mb3_eta_HQ & 0x40)>>6) || ((mb3_eta_HQ & 0x80)>>7));
 
-        if ( posALL ) {
-            theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 3, posBTI, qualBTI) );
-        }
+        theSegments.push_back( L1MuDTChambThDigi( bxNr, wheel, sector-1, 3, posBTI, qualBTI) );
         
       }//etha word
      
