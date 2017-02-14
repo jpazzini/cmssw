@@ -5,7 +5,7 @@ import string, os, sys
 WriteLogfile = False
 
 #toRun contains 3 steps: 1, 2 and 3
-toRun = ["cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPppstau_M_1599_TuneCUETP8M1_13TeV_pythia8_cff.py --mc \
+toRun = ["cmsDriver.py Configuration/GenProduction/python/FourteenTeV/HSCPppstau_M_1599_TuneCUETP8M1_13TeV_pythia8_cff.py --mc \
          --fileout file:step1.root \
          --eventcontent RAWSIM \
          --datatier GEN-SIM \
