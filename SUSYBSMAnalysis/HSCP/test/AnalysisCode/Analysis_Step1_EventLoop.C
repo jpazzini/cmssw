@@ -301,57 +301,58 @@ TVector3 getOuterHitPos(const DeDxHitInfo* dedxHits){
 // check if the event is passing trigger or not --> note that the function has two part (one for 2011 analysis and the other one for 2012)
 bool PassTrigger(const fwlite::ChainEvent& ev, bool isData, bool isCosmic, L1BugEmulator* emul)
 {
-   edm::TriggerResultsByName tr = ev.triggerResultsByName("HLT");
-   if(!tr.isValid())         tr = ev.triggerResultsByName("MergeHLT");
-   if(!tr.isValid())return false;
-
-   if(passTriggerPatterns(tr, "HLT_PFMET170_NoiseCleaned_v*") || passTriggerPatterns(tr, "HLT_PFMET170_HBHECleaned_v*"))return true;
-   if(passTriggerPatterns(tr, "HLT_Mu45_eta2p1_v*") || passTriggerPatterns(tr, "HLT_Mu50_v*")){
-      if (!isData && emul){
-         fwlite::Handle < std::vector<reco::Muon> > muonCollHandle;
-         muonCollHandle.getByLabel(ev, "muons");
-         if (!muonCollHandle.isValid()) return false;
-         else{
-            bool KeepEvent=false;
-            for (unsigned int c=0;c<muonCollHandle->size();c++){
-               reco::MuonRef muon = reco::MuonRef(muonCollHandle.product(), c);
-               if (muon.isNull()) continue;
-               if (muon->track().isNull()) continue;
-               if (emul->PassesL1Inefficiency(muon->track()->pt(), std::fabs(muon->track()->eta()))){
-                  KeepEvent=true;
-                  break;
-               }
-            }
-            return KeepEvent;
-         }
-      }
-      else return true;
-   }
-//   if(passTriggerPatterns(tr, "HLT_Mu50_v*"))return true;
-
-   return false; //FIXME triggers bellow will need to be adapted based on Run2 trigger menu
-
-   //for(unsigned int i=0;i<tr.size();i++){
-   //printf("Path %3i %50s --> %1i\n",i, tr.triggerName(i).c_str(),tr.accept(i));
-   //}fflush(stdout);
-
-   //if(tr.accept("HSCPHLTTriggerMetDeDxFilter"))return true;
-   //if(tr.accept("HSCPHLTTriggerMuDeDxFilter"))return true;
-   if(tr.accept("HSCPHLTTriggerMuFilter"))return true;
-   if(tr.accept("HSCPHLTTriggerPFMetFilter"))return true;
-
-   //Could probably use this trigger for the other analyses as well
-   if(TypeMode==3){
-      if(tr.size()== tr.triggerIndex("HSCPHLTTriggerL2MuFilter")) return false;
-      if(tr.accept(tr.triggerIndex("HSCPHLTTriggerL2MuFilter")))  return true;
-
-      //Only accepted if looking for cosmic events
-      if(isCosmic) {
-         if(tr.size()== tr.triggerIndex("HSCPHLTTriggerCosmicFilter")) return false;
-         if(tr.accept(tr.triggerIndex("HSCPHLTTriggerCosmicFilter"))) return true;
-      }
-   }
-   return false;
+//    edm::TriggerResultsByName tr = ev.triggerResultsByName("HLT");
+//    if(!tr.isValid())         tr = ev.triggerResultsByName("MergeHLT");
+//    if(!tr.isValid())return false;
+// 
+//    if(passTriggerPatterns(tr, "HLT_PFMET170_NoiseCleaned_v*") || passTriggerPatterns(tr, "HLT_PFMET170_HBHECleaned_v*"))return true;
+//    if(passTriggerPatterns(tr, "HLT_Mu45_eta2p1_v*") || passTriggerPatterns(tr, "HLT_Mu50_v*")){
+//       if (!isData && emul){
+//          fwlite::Handle < std::vector<reco::Muon> > muonCollHandle;
+//          muonCollHandle.getByLabel(ev, "muons");
+//          if (!muonCollHandle.isValid()) return false;
+//          else{
+//             bool KeepEvent=false;
+//             for (unsigned int c=0;c<muonCollHandle->size();c++){
+//                reco::MuonRef muon = reco::MuonRef(muonCollHandle.product(), c);
+//                if (muon.isNull()) continue;
+//                if (muon->track().isNull()) continue;
+//                if (emul->PassesL1Inefficiency(muon->track()->pt(), std::fabs(muon->track()->eta()))){
+//                   KeepEvent=true;
+//                   break;
+//                }
+//             }
+//             return KeepEvent;
+//          }
+//       }
+//       else return true;
+//    }
+// //   if(passTriggerPatterns(tr, "HLT_Mu50_v*"))return true;
+// 
+//    return false; //FIXME triggers bellow will need to be adapted based on Run2 trigger menu
+// 
+//    //for(unsigned int i=0;i<tr.size();i++){
+//    //printf("Path %3i %50s --> %1i\n",i, tr.triggerName(i).c_str(),tr.accept(i));
+//    //}fflush(stdout);
+// 
+//    //if(tr.accept("HSCPHLTTriggerMetDeDxFilter"))return true;
+//    //if(tr.accept("HSCPHLTTriggerMuDeDxFilter"))return true;
+//    if(tr.accept("HSCPHLTTriggerMuFilter"))return true;
+//    if(tr.accept("HSCPHLTTriggerPFMetFilter"))return true;
+// 
+//    //Could probably use this trigger for the other analyses as well
+//    if(TypeMode==3){
+//       if(tr.size()== tr.triggerIndex("HSCPHLTTriggerL2MuFilter")) return false;
+//       if(tr.accept(tr.triggerIndex("HSCPHLTTriggerL2MuFilter")))  return true;
+// 
+//       //Only accepted if looking for cosmic events
+//       if(isCosmic) {
+//          if(tr.size()== tr.triggerIndex("HSCPHLTTriggerCosmicFilter")) return false;
+//          if(tr.accept(tr.triggerIndex("HSCPHLTTriggerCosmicFilter"))) return true;
+//       }
+//    }
+//    return false;
+   return true;
 }
 
 

@@ -27,7 +27,7 @@ namespace reco    { class Vertex; class Track; class GenParticle; class DeDxData
 namespace susybsm { class HSCParticle;}
 namespace fwlite  { class ChainEvent;}
 namespace trigger { class TriggerEvent;}
-namespace edm     {class TriggerResults; class TriggerResultsByName; class InputTag;}
+namespace edm     { class TriggerResults; class TriggerResultsByName; class InputTag;}
 
 #if !defined(__CINT__) && !defined(__MAKECINT__)
 #include "FWCore/FWLite/interface/FWLiteEnabler.h"
@@ -37,6 +37,7 @@ namespace edm     {class TriggerResults; class TriggerResultsByName; class Input
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
+#include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
 
 using namespace fwlite;
 using namespace reco;
@@ -115,9 +116,8 @@ struct dEdxStudyObj
    TH2D* Charge_Vs_XYHN[16];
    TH2D* Charge_Vs_XYLN[16];
 
-
-   TH3F* dEdxTemplates = NULL;
-   std::unordered_map<unsigned int,double>* TrackerGains = NULL;
+    TH3F* dEdxTemplates = NULL;
+    std::unordered_map<unsigned int,double>* TrackerGains = NULL;
 
    dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* dEdxTemplates_=NULL, std::unordered_map<unsigned int,double>* TrackerGains_=NULL, bool mustBeInside_=false, bool removeCosmics_=false, bool correctFEDSat_=false, bool useClusterCleaning_=false, int crossTalkInvAlgo_=0){
       Name = Name_;
@@ -238,54 +238,55 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
          dEdxSF [1] = 1.21836;
 //       dEdxTemplates    = loadDeDxTemplate(DIRNAME + "/../../../data/Data13TeV_Deco_SiStripDeDxMip_3D_Rcd.root", true);
 //       dEdxTemplatesInc = loadDeDxTemplate(DIRNAME + "/../../../data/Data13TeV_Deco_SiStripDeDxMip_3D_Rcd.root", false);
-         dEdxTemplates      = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_Run251252.root"           , true);
-         dEdxTemplatesIn    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_Run251252.root"    , true);
-         dEdxTemplatesInc   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_Run251252.root"           , false);
-         dEdxTemplatesCC    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CC_Run251252.root" , true);
-         dEdxTemplatesCI    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CI_Run251252.root" , true);
-         dEdxTemplatesCCC   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CCC_Run251252.root", true);
+// // //          dEdxTemplates      = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_Run251252.root"           , true);
+// // //          dEdxTemplatesIn    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_Run251252.root"    , true);
+// // //          dEdxTemplatesInc   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_Run251252.root"           , false);
+// // //          dEdxTemplatesCC    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CC_Run251252.root" , true);
+// // //          dEdxTemplatesCI    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CI_Run251252.root" , true);
+// // //          dEdxTemplatesCCC   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CCC_Run251252.root", true);
    }else{
          dEdxSF [0] = 1.09708;
          dEdxSF [1] = 1.01875;
 //       dEdxTemplates    = loadDeDxTemplate(DIRNAME + "/../../../data/MC13TeV_Deco_SiStripDeDxMip_3D_Rcd.root", true);
 //       dEdxTemplatesInc = loadDeDxTemplate(DIRNAME + "/../../../data/MC13TeV_Deco_SiStripDeDxMip_3D_Rcd.root", false); 
-         dEdxTemplates      = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_MCMinBias.root"           , true);
-         dEdxTemplatesIn    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_MCMinBias.root"    , true);
-         dEdxTemplatesInc   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_MCMinBias.root"           , false);
-         dEdxTemplatesCC    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CC_MCMinBias.root" , true);
-         dEdxTemplatesCI    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CI_MCMinBias.root" , true);
-         dEdxTemplatesCCC   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CCC_MCMinBias.root", true);
+// // //          dEdxTemplates      = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_MCMinBias.root"           , true);
+// // //          dEdxTemplatesIn    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_MCMinBias.root"    , true);
+// // //          dEdxTemplatesInc   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_MCMinBias.root"           , false);
+// // //          dEdxTemplatesCC    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CC_MCMinBias.root" , true);
+// // //          dEdxTemplatesCI    = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CI_MCMinBias.root" , true);
+// // //          dEdxTemplatesCCC   = loadDeDxTemplate (DIRNAME+"/Templates/dEdxTemplate_hit_SP_in_noC_CCC_MCMinBias.root", true);
    }
 
-   std::unordered_map<unsigned int,double> TrackerGains;
-   LoadDeDxCalibration(TrackerGains, DIRNAME+"/../../../data/Data13TeVGains.root");
+   dedxGainCorrector trackerCorrector;
+//    std::unordered_map<unsigned int,double> TrackerGains;
+   trackerCorrector.LoadDeDxCalibration(DIRNAME+"/../../../data/Data13TeVGains.root");
 
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
 
    std::vector<dEdxStudyObj*> results;
    results.push_back(new dEdxStudyObj("hit_PO"      , 0, 1, NULL            , NULL) );
    results.push_back(new dEdxStudyObj("hit_SO_raw"  , 0, 2, NULL            , NULL) );
-   results.push_back(new dEdxStudyObj("hit_SO"      , 0, 2, NULL            , &TrackerGains) );
-   results.push_back(new dEdxStudyObj("hit_SP"      , 0, 3, NULL            , &TrackerGains) );
-   results.push_back(new dEdxStudyObj("hit_SO_in"   , 0, 2, NULL            , &TrackerGains, true) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC", 0, 3, NULL           , &TrackerGains, true) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CI" , 0, 3, NULL       , &TrackerGains, true, true, false, false, 1) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CC" , 0, 3, NULL       , &TrackerGains, true, true, false, true,  0) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CCC", 0, 3, NULL       , &TrackerGains, true, true, false, true,  1) );
+   results.push_back(new dEdxStudyObj("hit_SO"      , 0, 2, NULL            , trackerCorrector.TrackerGains) );
+   results.push_back(new dEdxStudyObj("hit_SP"      , 0, 3, NULL            , trackerCorrector.TrackerGains) );
+   results.push_back(new dEdxStudyObj("hit_SO_in"   , 0, 2, NULL            , trackerCorrector.TrackerGains, true) );
+   results.push_back(new dEdxStudyObj("hit_SP_in_noC", 0, 3, NULL           , trackerCorrector.TrackerGains, true) );
+   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CI" , 0, 3, NULL       , trackerCorrector.TrackerGains, true, true, false, false, 1) );
+   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CC" , 0, 3, NULL       , trackerCorrector.TrackerGains, true, true, false, true,  0) );
+   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CCC", 0, 3, NULL       , trackerCorrector.TrackerGains, true, true, false, true,  1) );
    results.push_back(new dEdxStudyObj("harm2_PO_raw", 1, 1, NULL            , NULL) );
-   results.push_back(new dEdxStudyObj("harm2_SO"    , 1, 2, NULL            , &TrackerGains) );
-   results.push_back(new dEdxStudyObj("harm2_SO_FS" , 1, 2, NULL            , &TrackerGains, false, false, true) );
-   results.push_back(new dEdxStudyObj("harm2_SO_in" , 1, 2, NULL            , &TrackerGains, true) );
-   results.push_back(new dEdxStudyObj("harm2_SO_in_noC"       , 1, 2, NULL  , &TrackerGains, true, true) );
-   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CI"    , 1, 2, NULL  , &TrackerGains, true, true, false, false, 1) );
-   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CC"    , 1, 2, NULL  , &TrackerGains, true, true, false, true,  0) );
-   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CCC"   , 1, 2, NULL  , &TrackerGains, true, true, false, true,  1) );
-   results.push_back(new dEdxStudyObj("harm2_SP"    , 1, 3, NULL            , &TrackerGains) );
-   results.push_back(new dEdxStudyObj("harm2_SP_in" , 1, 3, NULL            , &TrackerGains, true) );
-   results.push_back(new dEdxStudyObj("harm2_SP_in_noC"       , 1, 3, NULL  , &TrackerGains, true, true) );
-   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CI"    , 1, 3, NULL  , &TrackerGains, true, true, false, false, 1) );
-   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CC"    , 1, 3, NULL  , &TrackerGains, true, true, false, true,  0) );
-   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CCC"   , 1, 3, NULL  , &TrackerGains, true, true, false, true,  1) );
+   results.push_back(new dEdxStudyObj("harm2_SO"    , 1, 2, NULL            , trackerCorrector.TrackerGains) );
+   results.push_back(new dEdxStudyObj("harm2_SO_FS" , 1, 2, NULL            , trackerCorrector.TrackerGains, false, false, true) );
+   results.push_back(new dEdxStudyObj("harm2_SO_in" , 1, 2, NULL            , trackerCorrector.TrackerGains, true) );
+   results.push_back(new dEdxStudyObj("harm2_SO_in_noC"       , 1, 2, NULL  , trackerCorrector.TrackerGains, true, true) );
+   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CI"    , 1, 2, NULL  , trackerCorrector.TrackerGains, true, true, false, false, 1) );
+   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CC"    , 1, 2, NULL  , trackerCorrector.TrackerGains, true, true, false, true,  0) );
+   results.push_back(new dEdxStudyObj("harm2_SO_in_noC_CCC"   , 1, 2, NULL  , trackerCorrector.TrackerGains, true, true, false, true,  1) );
+   results.push_back(new dEdxStudyObj("harm2_SP"    , 1, 3, NULL            , trackerCorrector.TrackerGains) );
+   results.push_back(new dEdxStudyObj("harm2_SP_in" , 1, 3, NULL            , trackerCorrector.TrackerGains, true) );
+   results.push_back(new dEdxStudyObj("harm2_SP_in_noC"       , 1, 3, NULL  , trackerCorrector.TrackerGains, true, true) );
+   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CI"    , 1, 3, NULL  , trackerCorrector.TrackerGains, true, true, false, false, 1) );
+   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CC"    , 1, 3, NULL  , trackerCorrector.TrackerGains, true, true, false, true,  0) );
+   results.push_back(new dEdxStudyObj("harm2_SP_in_noC_CCC"   , 1, 3, NULL  , trackerCorrector.TrackerGains, true, true, false, true,  1) );
    results.push_back(new dEdxStudyObj("Ias_PO"      , 2, 1, dEdxTemplates   , NULL) );
    results.push_back(new dEdxStudyObj("Ias_SO_inc"  , 2, 2, dEdxTemplatesInc, NULL) );
    results.push_back(new dEdxStudyObj("Ias_SO"      , 2, 2, dEdxTemplates   , NULL) );
@@ -302,14 +303,31 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    results.push_back(new dEdxStudyObj("Ias_SP_in_noC_CC"      , 2, 3, dEdxTemplatesCC , NULL, true, true, false, true,  0) );
    results.push_back(new dEdxStudyObj("Ias_SP_in_noC_CCC"     , 2, 3, dEdxTemplatesCCC, NULL, true, true, false, true,  1) );
 
+    TH1I * TrackerClusterFirstStrip = new TH1I("TrackerClusterFirstStrip","TrackerClusterFirstStrip",2000,0,2000);
+    TH1I * TrackerClusterFirstRow = new TH1I("TrackerClusterFirstRow","TrackerClusterFirstRow",10,0,10);
+    TH1I * TrackerClusterEdge = new TH1I("TrackerClusterEdge","TrackerClusterEdge",10,0,10);
+    TH1I * TrackerClusterColumn = new TH1I("TrackerClusterColumn","TrackerClusterColumn",10,0,10);
+    TH1I * TrackerClusterSize = new TH1I("TrackerClusterSize","TrackerClusterSize",10,0,10);
+    TH1I * TrackerClusterThreshold = new TH1I("TrackerClusterThreshold","TrackerClusterThreshold",10,0,10);
+    TH1F * TrackerClusterCenter = new TH1F("TrackerClusterCenter","TrackerClusterCenter",4000,0,2000);
+    TH2F * TrackerClusterBarycenter = new TH2F("TrackerClusterBarycenter","TrackerClusterBarycenter",4000,0,2000,10,0,10);
+    TH1I * FirstDigiChannel = new TH1I("FirstDigiChannel","FirstDigiChannel",2000,0,2000);
+    TH1I * FirstDigiColumn = new TH1I("FirstDigiColumn","FirstDigiColumn",10,0,10);
+    TH1I * FirstDigiEdge = new TH1I("FirstDigiEdge","FirstDigiEdge",10,0,10);
+    TH1I * FirstDigiOverThreshold = new TH1I("FirstDigiOverThreshold","FirstDigiOverThreshold",10,0,10);
+    TH1I * FirstDigiPackedPosition = new TH1I("FirstDigiPackedPosition","FirstDigiPackedPosition",2000,0,2000);
+    TH1I * FirstDigiRow = new TH1I("FirstDigiRow","FirstDigiRow",2000,0,2000);
+    TH1I * FirstDigiStrip = new TH1I("FirstDigiStrip","FirstDigiStrip",2000,0,2000);
+
    printf("Progressing Bar           :0%%       20%%       40%%       60%%       80%%       100%%\n");
    for(unsigned int f=0;f<FileName.size();f++){
      TFile* file = TFile::Open(FileName[f].c_str() );
      fwlite::Event ev(file);
      printf("Scanning the ntuple %2i/%2i :", (int)f+1, (int)FileName.size());
-     int treeStep(ev.size()/50), iev=0;
-     for(ev.toBegin(); !ev.atEnd(); ++ev){ iev++;
-         if(iev%treeStep==0){printf(".");fflush(stdout);}
+//      int treeStep(ev.size()/50), iev=0;
+     for(ev.toBegin(); !ev.atEnd(); ++ev){ 
+//          iev++;
+//          if(iev%treeStep==0){printf(".");fflush(stdout);}
 
          fwlite::Handle<DeDxHitInfoAss> dedxCollH;
          dedxCollH.getByLabel(ev, "dedxHitInfo");
@@ -341,7 +359,30 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
             }
          }
-
+         
+         fwlite::Handle < edmNew::DetSetVector<Phase2TrackerCluster1D> > PhaseIITrkClustHand;
+         PhaseIITrkClustHand.getByLabel(ev, "siPhase2Clusters");
+         if(!PhaseIITrkClustHand.isValid()){printf("siPhase2Clusters Collection not found!\n"); continue;}        
+         for (edmNew::DetSetVector<Phase2TrackerCluster1D>::const_iterator cl=PhaseIITrkClustHand->begin(); cl != PhaseIITrkClustHand->end(); cl++) {
+            Phase2TrackerCluster1D* c = cl->begin();
+            for ( ; c != cl->end(); c++){
+                TrackerClusterFirstStrip->Fill(c->firstStrip());
+                TrackerClusterFirstRow->Fill(c->firstRow());
+                TrackerClusterEdge->Fill(c->edge());
+                TrackerClusterColumn->Fill(c->column());
+                TrackerClusterSize->Fill(c->size());
+                TrackerClusterThreshold->Fill(c->threshold());
+                TrackerClusterCenter->Fill(c->center());
+                TrackerClusterBarycenter->Fill(c->barycenter().first,c->barycenter().second);
+                FirstDigiChannel->Fill((c->firstDigi()).channel());
+                FirstDigiColumn->Fill((c->firstDigi()).column());
+                FirstDigiEdge->Fill((c->firstDigi()).edge());
+                FirstDigiOverThreshold->Fill((c->firstDigi()).overThreshold());
+                FirstDigiPackedPosition->Fill((c->firstDigi()).packedPosition());
+                FirstDigiRow->Fill((c->firstDigi()).row());
+                FirstDigiStrip->Fill((c->firstDigi()).strip());
+            }
+         }         
 
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             //basic track quality cuts
