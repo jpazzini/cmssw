@@ -11,6 +11,7 @@ dedxHitInfo = cms.EDProducer("DeDxHitInfoProducer",
     useTrajectory      = cms.bool(True),
     useStrip           = cms.bool(True),
     usePixel           = cms.bool(True),
+    usePhase2Strip     = cms.bool(False),
     MeVperADCStrip     = cms.double(3.61e-06*265),
     MeVperADCPixel     = cms.double(3.61e-06),
 
