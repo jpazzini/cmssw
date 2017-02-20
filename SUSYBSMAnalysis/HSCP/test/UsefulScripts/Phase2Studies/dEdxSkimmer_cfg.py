@@ -65,9 +65,9 @@ process.RefitterForDeDx = TrackRefitter.clone(
 
 from RecoTracker.DeDx.dedxEstimators_cff import *
 process.dedxHitInfo = dedxHitInfo.clone(
-      tracks=cms.InputTag("RefitterForDeDx")
-      trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx")
-      minTrackPt = cms.double(0.0)
+      tracks=cms.InputTag("RefitterForDeDx"),
+      trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx"),
+      minTrackPt = cms.double(0.0),
       usePhase2Strip = cms.bool(True)
 )
 

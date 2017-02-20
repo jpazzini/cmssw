@@ -276,7 +276,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
 
          fwlite::Handle< std::vector<reco::GenParticle> > genCollHandle;
-         if(isSignal){
+/*         if(isSignal){
             //get the collection of generated Particles
             genCollHandle.getByLabel(ev, "genParticlesSkimmed");
             if(!genCollHandle.isValid()){
@@ -284,7 +284,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
             }
          }
-
+*/
          std::cerr << "Event contains " << trackCollHandle->size() << " tracks." << std::endl;
          // TEST TRACK LOOP
          for(unsigned int c=0;c<trackCollHandle->size();c++){
@@ -309,7 +309,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             const std::vector <SiStripCluster> strips = dedxHits->stripClusters();
             const std::vector <Phase2TrackerCluster1D> phase2s = dedxHits->phase2TrackerCluster1D();
 
-            fprintf (stderr, "Track %d contains %lu hits: %u pixel hits and %u strip hits\n", c, dedxHits->size(),
+            fprintf (stderr, "Track %d: %lu/%lu hits: %lu P, %lu S, %lu P2\n", c, dedxHits->size(), track->recHitsSize(),
                     pixels.size(), strips.size(), phase2s.size());
          } // END TEST TRACK LOOP
 
