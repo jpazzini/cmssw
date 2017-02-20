@@ -28,6 +28,7 @@ DeDxHitInfoProducer::DeDxHitInfoProducer(const edm::ParameterSet& iConfig):
    useTrajectory     ( iConfig.getParameter<bool>    ("useTrajectory")  ),
    usePixel          ( iConfig.getParameter<bool>    ("usePixel")       ),
    useStrip          ( iConfig.getParameter<bool>    ("useStrip")       ),
+   usePhase2Strip    ( iConfig.getParameter<bool>    ("usePhase2Strip") ),
    MeVperADCPixel    ( iConfig.getParameter<double>  ("MeVperADCPixel") ),
    MeVperADCStrip    ( iConfig.getParameter<double>  ("MeVperADCStrip") ),
    minTrackHits      ( iConfig.getParameter<unsigned>("minTrackHits")   ),
@@ -43,7 +44,7 @@ DeDxHitInfoProducer::DeDxHitInfoProducer(const edm::ParameterSet& iConfig):
    m_tracksTag = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("tracks"));
    m_trajTrackAssociationTag   = consumes<TrajTrackAssociationCollection>(iConfig.getParameter<edm::InputTag>("trajectoryTrackAssociation"));
 
-   if(!usePixel && !useStrip)
+   if((!usePixel && !useStrip) || (!usePixel && !usePhase2Strip))
    edm::LogError("DeDxHitsProducer") << "No Pixel Hits NOR Strip Hits will be saved.  Running this module is useless";
 }
 
@@ -176,7 +177,31 @@ void DeDxHitInfoProducer::processHit(const TrackingRecHit* recHit, const float t
           pathLen     = detUnitS.surface().bounds().thickness()/cosineAbs;
           chargeAbs   = DeDxTools::getCharge(&(matchedHit->stereoHit().stripCluster()),NSaturating, detUnitS, calibGains, m_off);
           hitDeDxInfo.addHit(chargeAbs, pathLen, thit.geographicalId(), hitLocalPos, matchedHit->stereoHit().stripCluster() );          
-       }
+       }else if(clus.isPhase2()){
+          if(!usePhase2Strip) return;
+
+          auto& detUnit     = *(recHit->detUnit());
+          int   NSaturating = 0;
+          float pathLen     = detUnit.surface().bounds().thickness()/cosineAbs;
+          float chargeAbs   = 0;
+          hitDeDxInfo.addHit(chargeAbs, pathLen, thit.geographicalId(), hitLocalPos, clus.phase2OTCluster() );
+       }/*else if(clus.isPhase2() && thit.isMatched()){
+          if(!usePhase2Strip) return;
+          const SiStripMatchedRecHit2D* matchedHit=dynamic_cast<const SiStripMatchedRecHit2D*>(recHit);
+          if(!matchedHit)return;
+
+          auto& detUnitM     = *(matchedHit->monoHit().detUnit());
+          int   NSaturating = 0;
+          float pathLen     = detUnitM.surface().bounds().thickness()/cosineAbs;
+          float chargeAbs   = DeDxTools::getCharge(&(matchedHit->monoHit().phase2OTCluster()),NSaturating, detUnitM, calibGains, m_off);
+          hitDeDxInfo.addHit(chargeAbs, pathLen, thit.geographicalId(), hitLocalPos, matchedHit->monoHit().phase2OTCluster() );
+
+          auto& detUnitS     = *(matchedHit->stereoHit().detUnit());
+          NSaturating = 0;
+          pathLen     = detUnitS.surface().bounds().thickness()/cosineAbs;
+          chargeAbs   = DeDxTools::getCharge(&(matchedHit->stereoHit().phase2OTCluster()),NSaturating, detUnitS, calibGains, m_off);
+          hitDeDxInfo.addHit(chargeAbs, pathLen, thit.geographicalId(), hitLocalPos, matchedHit->stereoHit().phase2OTCluster() );          
+       }*/
 }
 
 
