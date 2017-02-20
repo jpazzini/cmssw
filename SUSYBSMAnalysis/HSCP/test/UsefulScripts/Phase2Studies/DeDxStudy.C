@@ -39,6 +39,7 @@ namespace edm     {class TriggerResults; class TriggerResultsByName; class Input
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
 
 using namespace fwlite;
 using namespace reco;
@@ -296,7 +297,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(!dedxHitsRef.isNull())dedxHits = &(*dedxHitsRef);
             if(!dedxHits)continue;
 
-
             unsigned int StripHits = 0,
                          PixelHits = 0;
             for(unsigned int h=0;h<dedxHits->size();h++){
@@ -304,8 +304,13 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                 if (detId.subdetId() < SiStripDetId::TIB)
                     PixelHits++;
                 else StripHits++;
-            } 
-            fprintf (stderr, "Track %d contains %lu hits: %u pixel hits and %u strip hits\n", c, dedxHits->size(), PixelHits, StripHits);
+            }
+            const std::vector <SiPixelCluster> pixels = dedxHits->pixelClusters();
+            const std::vector <SiStripCluster> strips = dedxHits->stripClusters();
+            const std::vector <Phase2TrackerCluster1D> phase2s = dedxHits->phase2TrackerCluster1D();
+
+            fprintf (stderr, "Track %d contains %lu hits: %u pixel hits and %u strip hits\n", c, dedxHits->size(),
+                    pixels.size(), strips.size(), phase2s.size());
          } // END TEST TRACK LOOP
 
          // LOOP OVER TRACKS
