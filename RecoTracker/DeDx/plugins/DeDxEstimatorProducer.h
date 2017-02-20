@@ -66,6 +66,7 @@ private:
   bool useTrajectory;
   bool usePixel;
   bool useStrip;
+  bool usePhase2Strip;
   float meVperADCPixel;
   float meVperADCStrip;
 
