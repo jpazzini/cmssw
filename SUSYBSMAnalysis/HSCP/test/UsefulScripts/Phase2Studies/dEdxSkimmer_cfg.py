@@ -53,6 +53,8 @@ process.tracksForDeDx = process.AlignmentTrackSelector.clone(
     ptMin = 0.3,
     nHitMin = 6,
     chi2nMax = 10.,
+    etaMin = cms.double(-5.0),
+    etaMax = cms.double(+5.0),    
 )
 
 process.load('RecoVertex.BeamSpotProducer.BeamSpot_cff')
@@ -95,9 +97,11 @@ process.p = cms.Path(process.tracksForDeDx * process.offlineBeamSpot * process.R
 process.endPath1 = cms.EndPath(process.Out)
 process.schedule = cms.Schedule(process.p, process.endPath1)
 
-process.Out.fileName = cms.untracked.string('dEdxSkim.root')
+process.Out.fileName = cms.untracked.string('dEdxSkim_step3.root')
+process.source.fileNames.extend(['file:/afs/cern.ch/user/j/jpazzini/work/public/PhaseII/Files/step3.root'])
 
-process.source.fileNames.extend(['file:step3.root'])
+#process.Out.fileName = cms.untracked.string('dEdxSkim_MinBias140.root')
+#process.source.fileNames.extend(['file:/afs/cern.ch/user/j/jpazzini/work/public/PhaseII/Files/MinBias140.root'])
 
 #import PhysicsTools.PythonAnalysis.LumiList as LumiList
 #process.source.lumisToProcess = LumiList.LumiList(filename = 'OneFillRuns.json').getVLuminosityBlockRange()
