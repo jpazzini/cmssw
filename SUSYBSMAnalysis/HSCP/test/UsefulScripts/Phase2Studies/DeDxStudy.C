@@ -74,6 +74,26 @@ const double Charge_Min          = 0   ;
 const double Charge_Max          = 5000;
 const int    Charge_NBins        = 500 ;
 
+struct perTrackHistos 
+{
+    TH1I * dEdXHits         = new TH1I ("dEdXHits","dEdXHits",60,0,60);
+    TH1I * pixelHits        = new TH1I ("pixelHits","pixelHits",60,0,60);
+    TH1I * phase2sHits      = new TH1I ("phase2sHits","phase2sHits",60,0,60);
+
+    TH2F * dEdXHitsVsEta    = new TH2F ("dEdXHitsVsEta","dEdXHitsVsEta",60,-0.5,59.5,80,-4,4);
+    TH2F * pixelHitsVsEta   = new TH2F ("pixelHitsVsEta","pixelHitsVsEta",60,-0.5,59.5,80,-4,4);
+    TH2F * phase2sHitsVsEta = new TH2F ("phase2sHitsVsEta","phase2sHitsVsEta",60,-0.5,59.5,80,-4,4);
+
+    TH2F * dEdXHitsVsPt    = new TH2F ("dEdXHitsVsPt","dEdXHitsVsPt",60,-0.5,59.5,100,0,100);
+    TH2F * pixelHitsVsPt   = new TH2F ("pixelHitsVsPt","pixelHitsVsPt",60,-0.5,59.5,100,0,100);
+    TH2F * phase2sHitsVsPt = new TH2F ("phase2sHitsVsPt","phase2sHitsVsPt",60,-0.5,59.5,100,0,100);
+
+    TH2F * dEdXHitsVsP    = new TH2F ("dEdXHitsVsP","dEdXHitsVsP",60,-0.5,59.5,100,0,100);
+    TH2F * pixelHitsVsP   = new TH2F ("pixelHitsVsP","pixelHitsVsP",60,-0.5,59.5,100,0,100);
+    TH2F * phase2sHitsVsP = new TH2F ("phase2sHitsVsP","phase2sHitsVsP",60,-0.5,59.5,100,0,100);
+    
+};
+
 struct dEdxStudyObj
 {
    string Name;
@@ -247,6 +267,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    results.push_back(new dEdxStudyObj("hit_SO_in_noC_CCC", 0, 2, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
    results.push_back(new dEdxStudyObj("hit_SP_in_noC_CCC", 0, 3, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
 
+    perTrackHistos hists;
+   
    // FILE LOOP
    for(unsigned int f=0;f<FileName.size();f++){
      TFile* file = TFile::Open(FileName[f].c_str() );
@@ -290,7 +312,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
             if(track.isNull())continue;
-
+            
             //load the track dE/dx hit info
             const DeDxHitInfo* dedxHits = NULL;
             DeDxHitInfoRef dedxHitsRef = dedxCollH->get(track.key());
@@ -311,10 +333,28 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
             fprintf (stderr, "Track %d: %lu/%lu hits: %lu P, %lu S, %lu P2\n", c, dedxHits->size(), track->recHitsSize(),
                     pixels.size(), strips.size(), phase2s.size());
+            
+            hists.dEdXHits->Fill(dedxHits->size());
+            hists.pixelHits->Fill(pixels.size());
+            hists.phase2sHits->Fill(phase2s.size());
+            
+            hists.dEdXHitsVsEta->Fill(dedxHits->size(),track->eta());
+            hists.pixelHitsVsEta->Fill(pixels.size(),track->eta());
+            hists.phase2sHitsVsEta->Fill(phase2s.size(),track->eta());
+            
+            hists.dEdXHitsVsPt->Fill(dedxHits->size(),track->pt());
+            hists.pixelHitsVsPt->Fill(pixels.size(),track->pt());
+            hists.phase2sHitsVsPt->Fill(phase2s.size(),track->pt());
+            
+            hists.dEdXHitsVsP->Fill(dedxHits->size(),track->p());
+            hists.pixelHitsVsP->Fill(pixels.size(),track->p());
+            hists.phase2sHitsVsP->Fill(phase2s.size(),track->p());
+            
+            
          } // END TEST TRACK LOOP
 
          // LOOP OVER TRACKS
-         /*
+         
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             //basic track quality cuts
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
@@ -322,13 +362,13 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->chi2()/track->ndof()>5 )continue;
             if(track->found()<8)continue;
 
-            if(isSignal){
-               if(track->pt()<45)continue;
-               const std::vector<reco::GenParticle>& genColl = *genCollHandle;
-               if (DistToHSCP (track, genColl)>0.03) continue;
-            }else{
-               if(track->pt()>=45)continue;
-            }
+//             if(isSignal){
+//                if(track->pt()<45)continue;
+//                const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+//                if (DistToHSCP (track, genColl)>0.03) continue;
+//             }else{
+//                if(track->pt()>=45)continue;
+//             }
 
             //load dEdx information
             const DeDxHitInfo* dedxHits = NULL;
@@ -355,131 +395,133 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       if(!results[R]->isHit) continue; //only consider results related to hit info here
                       if(!results[R]->usePixel && detid.subdetId() <3)continue; // skip pixels
                       if(!results[R]->useStrip && detid.subdetId()>=3)continue; // skip strips
-                      if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->stripCluster(h):NULL) )continue;
+// // //                       if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->phase2cluster(h):NULL) )continue; /// NOTE -> JACOPO
                       if(results[R]->removeCosmics){ if (isCompatibleWithCosmic(track, vertexColl))continue;} //don't consider hits, which belong to cosmic tracks
 
-                      if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->stripCluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it!
-//                      if(results[R]->CCFunction && detid.subdetId()>=3 && !results[R]->CCFunction(dedxHits->stripCluster(h), results[R]->crossTalkInvAlgo, NULL)) continue; //if it fails clusterCleaning, skip it!
+// // //                       if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it! /// NOTE -> JACOPO
+//                      if(results[R]->CCFunction && detid.subdetId()>=3 && !results[R]->CCFunction(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo, NULL)) continue; //if it fails clusterCleaning, skip it!
 
                       int charge = dedxHits->charge(h);
-                      if (detid.subdetId()>=3 && results[R]->crossTalkInvAlgo==1){ //in case of crossTalkInv, give the corrected cluster charge
-                         vector <int> amps = convert(dedxHits->stripCluster(h)->amplitudes());
-                         amps = CrossTalkInv(amps, 0.10, 0.04, true);
-                         charge = std::accumulate(amps.begin(), amps.end(), 0);
+                      double ChargeOverPathlength   = 0.;
+                      double ChargeOverPathlength_U = 0.;
+                      if (detid.subdetId()>=3 ){
+                        ChargeOverPathlength   = dedxHits->phase2cluster(h)->threshold(); // FIXME -> not dividing for pathlength
+                        ChargeOverPathlength_U = dedxHits->phase2cluster(h)->threshold(); // FIXME -> not dividing for pathlength
+                      } else {                          
+                        ChargeOverPathlength   = scaleFactor*Norm*charge/dedxHits->pathlength(h);
+                        ChargeOverPathlength_U = 1.0*Norm*charge/dedxHits->pathlength(h);
                       }
-
-                      double ChargeOverPathlength   = scaleFactor*Norm*charge/dedxHits->pathlength(h);
-                      double ChargeOverPathlength_U = 1.0*Norm*charge/dedxHits->pathlength(h);
                       results[R]->HHit->Fill(ChargeOverPathlength);
-                      if (fabs(track->eta())<0.4){
-                         results[R]->HHitProfile->Fill(track->p(), ChargeOverPathlength);
-                         results[R]->HHitProfile_U->Fill(track->p(), ChargeOverPathlength_U);
-                      }
+
+//                       if (fabs(track->eta())<0.4){
+//                          results[R]->HHitProfile->Fill(track->p(), ChargeOverPathlength);
+//                          results[R]->HHitProfile_U->Fill(track->p(), ChargeOverPathlength_U);
+//                       }
 
                       if(results[R]->usePixel && results[R]->useStrip){
                          
                          results[R]->Charge_Vs_Path->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*(detid.subdetId()<3?265:1))); 
-                         if(detid.subdetId()>=3)results[R]->Charge_Vs_FS[moduleGeometry]->Fill(dedxHits->stripCluster(h)->firstStrip(), charge); 
+                         if(detid.subdetId()>=3)results[R]->Charge_Vs_FS[moduleGeometry]->Fill(dedxHits->phase2cluster(h)->firstStrip(), charge); 
                          results[R]->Charge_Vs_XYH[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
                          if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYL[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
     
-                         if(moduleGeometry>=1 && moduleGeometry<=14){ // FIXME we don't have the geometry information for Pixels yet (TkModGeom* arrays) !!!
-                            double nx, ny;
-                            if(moduleGeometry<=4){
-                               ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-                               nx = dedxHits->pos(h).x() /  TkModGeomWidthT[moduleGeometry];
-                            }else{
-                               double  offset = TkModGeomLength[moduleGeometry] * (TkModGeomWidthT[moduleGeometry]+TkModGeomWidthB[moduleGeometry]) / (TkModGeomWidthT[moduleGeometry]-TkModGeomWidthB[moduleGeometry]);  // check sign if GeomWidthT[moduleGeometry] < TkModGeomWidthB[moduleGeometry] !!! 
-                               double  tan_a = TkModGeomWidthT[moduleGeometry] / std::abs(offset + TkModGeomLength[moduleGeometry]);
-                               ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-                               nx = dedxHits->pos(h).x() / (tan_a*std::abs(dedxHits->pos(h).y()+offset));
-                            }
-                            //printf("%i - %f - %f --> %f - %f\n", moduleGeometry, dedxHits->pos(h).x(), dedxHits->pos(h).y(), nx, ny);
-                            results[R]->Charge_Vs_XYHN[moduleGeometry]->Fill(nx, ny); 
-                            if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYLN[moduleGeometry]->Fill(nx, ny);
-                         }
+//                          if(moduleGeometry>=1 && moduleGeometry<=14){ // FIXME we don't have the geometry information for Pixels yet (TkModGeom* arrays) !!!
+//                             double nx, ny;
+//                             if(moduleGeometry<=4){
+//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
+//                                nx = dedxHits->pos(h).x() /  TkModGeomWidthT[moduleGeometry];
+//                             }else{
+//                                double  offset = TkModGeomLength[moduleGeometry] * (TkModGeomWidthT[moduleGeometry]+TkModGeomWidthB[moduleGeometry]) / (TkModGeomWidthT[moduleGeometry]-TkModGeomWidthB[moduleGeometry]);  // check sign if GeomWidthT[moduleGeometry] < TkModGeomWidthB[moduleGeometry] !!! 
+//                                double  tan_a = TkModGeomWidthT[moduleGeometry] / std::abs(offset + TkModGeomLength[moduleGeometry]);
+//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
+//                                nx = dedxHits->pos(h).x() / (tan_a*std::abs(dedxHits->pos(h).y()+offset));
+//                             }
+//                             //printf("%i - %f - %f --> %f - %f\n", moduleGeometry, dedxHits->pos(h).x(), dedxHits->pos(h).y(), nx, ny);
+//                             results[R]->Charge_Vs_XYHN[moduleGeometry]->Fill(nx, ny); 
+//                             if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYLN[moduleGeometry]->Fill(nx, ny);
+//                          }
                       }
                    }
                 }
              }
 
-             bool isCosmic = isCompatibleWithCosmic(track, vertexColl);
-             bool lockOnTrack=false;
-             double dEdxDebug = 0;
-             for(unsigned int R=0;R<results.size();R++){
-                if(!results[R]->isEstim and !results[R]->isDiscrim) continue; //only consider results related to estimator/discriminator variables here
-                if(results[R]->removeCosmics && isCosmic)continue; //don't consider cosmic tracks
-
-                DeDxData dedxObj   = computedEdx(dedxHits, dEdxSF, results[R]->dEdxTemplates, results[R]->usePixel, results[R]->useClusterCleaning, false, results[R]->useTrunc, results[R]->TrackerGains, results[R]->useStrip, results[R]->mustBeInside, 99, results[R]->correctFEDSat, results[R]->crossTalkInvAlgo, results[R]->dropLowerDeDxValue, NULL);
- 
-
-		if (isSignal) results[R]->HdedxVsP->SetBins(1000, 0, 2400, results[R]->isDiscrim?1000:2000, 0, results[R]->isDiscrim?1.0:30); // if it's signal sample increase axis range
-                results[R]->HdedxVsP    ->Fill(track->p(), dedxObj.dEdx() );
-
-                if(track->pt()>10 && track->pt()<45 && dedxObj.numberOfMeasurements()>=(results[R]->useStrip?7:3) ){
-                  results[R]->HdedxVsEtaProfile->Fill(track->eta(), dedxObj.dEdx() );
-                  results[R]->HdedxVsEta->Fill(track->eta(), dedxObj.dEdx() );
-                  results[R]->HNOMVsEtaProfile->Fill(track->eta(),dedxObj.numberOfMeasurements() );
-                  results[R]->HNOSVsEtaProfile->Fill(track->eta(),dedxObj.numberOfSaturatedMeasurements() );
-                  results[R]->HNOMSVsEtaProfile->Fill(track->eta(),dedxObj.numberOfMeasurements() - dedxObj.numberOfSaturatedMeasurements() );
-                }
-
-                if(fabs(track->eta())>2.1) continue;
-                if((int)dedxObj.numberOfMeasurements()<(results[R]->useStrip?10:3))continue;
-//                if(track->found()<10) continue; // we cut on total number of hits instead of valid measurements
-
-                if(track->pt()>5){
-                   results[R]->HdedxVsNOH->Fill(track->found(), dedxObj.dEdx());
-                   results[R]->HNOMVsdEdxProfile->Fill(dedxObj.dEdx(), (int)dedxObj.numberOfMeasurements());
-                   results[R]->HNOMVsdEdx->Fill(dedxObj.dEdx(), (int)dedxObj.numberOfMeasurements());
-                   results[R]->HdedxMIP  ->Fill(dedxObj.dEdx());
-                   results[R]->HP->Fill(track->p());
-                }
-                if(fabs(track->eta())<0.4){
-                   results[R]->HdedxVsPProfile  ->Fill(track->p(), dedxObj  .dEdx() );
-                }
-
-                DeDxData dedxObjEstim   = results[R]->isEstim?dedxObj:computedEdx(dedxHits, dEdxSF, NULL                     , results[R]->usePixel, results[R]->useClusterCleaning, false, results[R]->useTrunc, results[R]->TrackerGains, results[R]->useStrip, results[R]->mustBeInside, 99, results[R]->correctFEDSat, results[R]->crossTalkInvAlgo, results[R]->dropLowerDeDxValue, NULL);
-                double Mass = GetMass(track->p(),dedxObjEstim.dEdx(), results[R]->Kconst, results[R]->Cconst);
-                if (Mass > 0.938-0.20 && Mass < 0.938+0.20 && dedxObjEstim.dEdx() > 5){// proton candidates
-                   results[R]->HdedxVsPSyst->Fill(track->p(), dedxObj.dEdx() );
-		   
-                   if (results[R]->isEstim && dedxObj.dEdx() > 7){
-                      for(unsigned int h=0;h<dedxHits->size();h++){
-                         DetId detid(dedxHits->detId(h));
-                         double scaleFactor = dEdxSF[0];
-                         if (detid.subdetId()<3) scaleFactor *= dEdxSF[1];
-                         double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
-                       
-                         int moduleGeometry = 0; // underflow bin -- debug purposes
-                         if(detid.subdetId()>=3){ SiStripDetId SSdetId(detid); moduleGeometry = SSdetId.moduleGeometry(); if (moduleGeometry==15) {cerr << "ERROR! There is no SiStrip geometry 15!" << endl; exit (EXIT_FAILURE);}}
-                         else if(detid.subdetId()<3){moduleGeometry = 15;} // 15 is for pixel
-                         if(!results[R]->usePixel && detid.subdetId() <3)continue; // skip pixels
-                         if(!results[R]->useStrip && detid.subdetId()>=3)continue; // skip strips
-                         if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->stripCluster(h):NULL) )continue;
-                         if(results[R]->removeCosmics){ if (isCompatibleWithCosmic(track, vertexColl))continue;} //don't consider hits, which belong to cosmic tracks
-                         if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->stripCluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it!
-                       
-                         int charge = dedxHits->charge(h);
-                         if (detid.subdetId()>=3 && results[R]->crossTalkInvAlgo!=0){
-                            vector <int> amps = CrossTalkInv(convert(dedxHits->stripCluster(h)->amplitudes()), 0.10, 0.04, true);
-                            charge = std::accumulate(amps.begin(), amps.end(), 0);
-                         }
-                         double ChargeOverPathlength = scaleFactor*Norm*charge/dedxHits->pathlength(h);
-
-			 if (detid.subdetId()<3) results[R]->HProtonHitPO->Fill(ChargeOverPathlength);
-			 else                    results[R]->HProtonHitSO->Fill(ChargeOverPathlength);
-                      }
-                   }
-                }
-
-                if(results[R]->isEstim && dedxObj.dEdx()>results[R]->Cconst + 3.0){  //mass can only be computed for dEdx estimators
-                   if(track->p()<3.0){      results[R]->HMass->Fill(Mass);
-                   }else{                   results[R]->HMassHSCP->Fill(Mass);
-                   }
-                }
-             }
-         }*/ // END TRACK LOOP
+//              bool isCosmic = isCompatibleWithCosmic(track, vertexColl);
+//              bool lockOnTrack=false;
+//              double dEdxDebug = 0;
+//              for(unsigned int R=0;R<results.size();R++){
+//                 if(!results[R]->isEstim and !results[R]->isDiscrim) continue; //only consider results related to estimator/discriminator variables here
+//                 if(results[R]->removeCosmics && isCosmic)continue; //don't consider cosmic tracks
+// 
+//                 DeDxData dedxObj   = computedEdx(dedxHits, dEdxSF, results[R]->dEdxTemplates, results[R]->usePixel, results[R]->useClusterCleaning, false, results[R]->useTrunc, results[R]->TrackerGains, results[R]->useStrip, results[R]->mustBeInside, 99, results[R]->correctFEDSat, results[R]->crossTalkInvAlgo, results[R]->dropLowerDeDxValue, NULL);
+//  
+// 
+// 		if (isSignal) results[R]->HdedxVsP->SetBins(1000, 0, 2400, results[R]->isDiscrim?1000:2000, 0, results[R]->isDiscrim?1.0:30); // if it's signal sample increase axis range
+//                 results[R]->HdedxVsP    ->Fill(track->p(), dedxObj.dEdx() );
+// 
+//                 if(track->pt()>10 && track->pt()<45 && dedxObj.numberOfMeasurements()>=(results[R]->useStrip?7:3) ){
+//                   results[R]->HdedxVsEtaProfile->Fill(track->eta(), dedxObj.dEdx() );
+//                   results[R]->HdedxVsEta->Fill(track->eta(), dedxObj.dEdx() );
+//                   results[R]->HNOMVsEtaProfile->Fill(track->eta(),dedxObj.numberOfMeasurements() );
+//                   results[R]->HNOSVsEtaProfile->Fill(track->eta(),dedxObj.numberOfSaturatedMeasurements() );
+//                   results[R]->HNOMSVsEtaProfile->Fill(track->eta(),dedxObj.numberOfMeasurements() - dedxObj.numberOfSaturatedMeasurements() );
+//                 }
+// 
+//                 if(fabs(track->eta())>2.1) continue;
+//                 if((int)dedxObj.numberOfMeasurements()<(results[R]->useStrip?10:3))continue;
+// //                if(track->found()<10) continue; // we cut on total number of hits instead of valid measurements
+// 
+//                 if(track->pt()>5){
+//                    results[R]->HdedxVsNOH->Fill(track->found(), dedxObj.dEdx());
+//                    results[R]->HNOMVsdEdxProfile->Fill(dedxObj.dEdx(), (int)dedxObj.numberOfMeasurements());
+//                    results[R]->HNOMVsdEdx->Fill(dedxObj.dEdx(), (int)dedxObj.numberOfMeasurements());
+//                    results[R]->HdedxMIP  ->Fill(dedxObj.dEdx());
+//                    results[R]->HP->Fill(track->p());
+//                 }
+//                 if(fabs(track->eta())<0.4){
+//                    results[R]->HdedxVsPProfile  ->Fill(track->p(), dedxObj  .dEdx() );
+//                 }
+// 
+//                 DeDxData dedxObjEstim   = results[R]->isEstim?dedxObj:computedEdx(dedxHits, dEdxSF, NULL                     , results[R]->usePixel, results[R]->useClusterCleaning, false, results[R]->useTrunc, results[R]->TrackerGains, results[R]->useStrip, results[R]->mustBeInside, 99, results[R]->correctFEDSat, results[R]->crossTalkInvAlgo, results[R]->dropLowerDeDxValue, NULL);
+//                 double Mass = GetMass(track->p(),dedxObjEstim.dEdx(), results[R]->Kconst, results[R]->Cconst);
+//                 if (Mass > 0.938-0.20 && Mass < 0.938+0.20 && dedxObjEstim.dEdx() > 5){// proton candidates
+//                    results[R]->HdedxVsPSyst->Fill(track->p(), dedxObj.dEdx() );
+// 		   
+//                    if (results[R]->isEstim && dedxObj.dEdx() > 7){
+//                       for(unsigned int h=0;h<dedxHits->size();h++){
+//                          DetId detid(dedxHits->detId(h));
+//                          double scaleFactor = dEdxSF[0];
+//                          if (detid.subdetId()<3) scaleFactor *= dEdxSF[1];
+//                          double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
+//                        
+//                          int moduleGeometry = 0; // underflow bin -- debug purposes
+//                          if(detid.subdetId()>=3){ SiStripDetId SSdetId(detid); moduleGeometry = SSdetId.moduleGeometry(); if (moduleGeometry==15) {cerr << "ERROR! There is no SiStrip geometry 15!" << endl; exit (EXIT_FAILURE);}}
+//                          else if(detid.subdetId()<3){moduleGeometry = 15;} // 15 is for pixel
+//                          if(!results[R]->usePixel && detid.subdetId() <3)continue; // skip pixels
+//                          if(!results[R]->useStrip && detid.subdetId()>=3)continue; // skip strips
+//                          if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->phase2cluster(h):NULL) )continue;
+//                          if(results[R]->removeCosmics){ if (isCompatibleWithCosmic(track, vertexColl))continue;} //don't consider hits, which belong to cosmic tracks
+//                          if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it!
+//                        
+//                          int charge = dedxHits->charge(h);
+//                          if (detid.subdetId()>=3 && results[R]->crossTalkInvAlgo!=0){
+//                             vector <int> amps = CrossTalkInv(convert(dedxHits->phase2cluster(h)->amplitudes()), 0.10, 0.04, true);
+//                             charge = std::accumulate(amps.begin(), amps.end(), 0);
+//                          }
+//                          double ChargeOverPathlength = scaleFactor*Norm*charge/dedxHits->pathlength(h);
+// 
+// 			 if (detid.subdetId()<3) results[R]->HProtonHitPO->Fill(ChargeOverPathlength);
+// 			 else                    results[R]->HProtonHitSO->Fill(ChargeOverPathlength);
+//                       }
+//                    }
+//                 }
+// 
+//                 if(results[R]->isEstim && dedxObj.dEdx()>results[R]->Cconst + 3.0){  //mass can only be computed for dEdx estimators
+//                    if(track->p()<3.0){      results[R]->HMass->Fill(Mass);
+//                    }else{                   results[R]->HMassHSCP->Fill(Mass);
+//                    }
+//                 }
+//              }
+         } // END TRACK LOOP
       } // END EVENT LOOP
       printf("\n");
       delete file;
