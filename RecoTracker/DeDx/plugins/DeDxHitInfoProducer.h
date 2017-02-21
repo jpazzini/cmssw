@@ -50,6 +50,7 @@ private:
   const bool useTrajectory;
   const bool usePixel;
   const bool useStrip;
+  const bool usePhase2Strip;
   const float MeVperADCPixel;
   const float MeVperADCStrip;
 
