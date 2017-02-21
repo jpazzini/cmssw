@@ -1,9 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process("DEDXUNCSKIM")
+from Configuration.StandardSequences.Eras import eras
+process = cms.Process("DEDXUNCSKIM", eras.Phase2C2_timing)
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.load('Configuration.Geometry.GeometryExtended2015Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D4_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.load('Configuration.StandardSequences.Services_cff')
@@ -30,7 +32,7 @@ process.source = cms.Source("PoolSource",
 
 #process.GlobalTag.globaltag = GTAG
 from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, "80X_dataRun2_Prompt_v8", '')
+process.GlobalTag = GlobalTag(process.GlobalTag, "90X_upgrade2023_realistic_v1", '')
 
 
 process.load('Alignment.CommonAlignmentProducer.AlignmentTrackSelector_cfi')
@@ -38,23 +40,29 @@ process.tracksForDeDx = process.AlignmentTrackSelector.clone(
     src = 'generalTracks',
     filter = True,
     applyBasicCuts = True,
-    ptMin = 0.3,
-    nHitMin = 6,
+    ptMin    = 0.3,
+    nHitMin  = 6,
     chi2nMax = 10.,
+    etaMin   = cms.double(-5.0),
+    etaMax   = cms.double(+5.0),
 )
 
 process.load('RecoVertex.BeamSpotProducer.BeamSpot_cff')
 from RecoTracker.TrackProducer.TrackRefitter_cfi import *
 process.RefitterForDeDx = TrackRefitter.clone(
       src = cms.InputTag("tracksForDeDx"),
-      NavigationSchool = cms.string("")                                   
+      NavigationSchool = cms.string(""),
+      TTRHBuilder = 'WithTrackAngle'
 )
 
 from RecoTracker.DeDx.dedxEstimators_cff import *
-process.dedxHitInfo = dedxHitInfo.clone()
-process.dedxHitInfo.tracks=cms.InputTag("RefitterForDeDx")
-process.dedxHitInfo.trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx")
-process.dedxHitInfo.minTrackPt = cms.double(0.0)
+process.dedxHitInfo = dedxHitInfo.clone(
+      tracks=cms.InputTag("RefitterForDeDx"),
+      trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx"),
+      minTrackPt = cms.double(0.0),
+      usePhase2Strip = cms.bool(True)
+)
+ 
 
 #make the pool output
 process.Out = cms.OutputModule("PoolOutputModule",
@@ -64,10 +72,8 @@ process.Out = cms.OutputModule("PoolOutputModule",
          "keep LumiSummary_*_*_*",
          "keep *_RefitterForDeDx_*_DEDXUNCSKIM",
          "keep *_offlinePrimaryVertices_*_*",
-#         "keep *_siPixelClusters_*_DEDXUNCSKIM",
-#         "keep *_siStripClusters_*_DEDXUNCSKIM",
-#         "keep *_siPixelClusters_*_*",
-         "keep *_siStripClusters_*_*",
+         "keep *_siPixelClusters_*_*",
+         "keep *_siPhase2Clusters_*_*",
          "keep *_dedxHitInfo_*_DEDXUNCSKIM",
     ),
     fileName = cms.untracked.string("dEdxSkim.root"),
