@@ -64,10 +64,12 @@ process.RefitterForDeDx = TrackRefitter.clone(
 )
 
 from RecoTracker.DeDx.dedxEstimators_cff import *
-process.dedxHitInfo = dedxHitInfo.clone()
-process.dedxHitInfo.tracks=cms.InputTag("RefitterForDeDx")
-process.dedxHitInfo.trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx")
-process.dedxHitInfo.minTrackPt = cms.double(0.0)
+process.dedxHitInfo = dedxHitInfo.clone(
+      tracks=cms.InputTag("RefitterForDeDx"),
+      trajectoryTrackAssociation = cms.InputTag("RefitterForDeDx"),
+      minTrackPt = cms.double(0.0),
+      usePhase2Strip = cms.bool(True)
+)
 
 #make the pool output
 process.Out = cms.OutputModule("PoolOutputModule",
@@ -77,10 +79,8 @@ process.Out = cms.OutputModule("PoolOutputModule",
          "keep LumiSummary_*_*_*",
          "keep *_RefitterForDeDx_*_DEDXUNCSKIM",
          "keep *_offlinePrimaryVertices_*_*",
-#         "keep *_siPixelClusters_*_DEDXUNCSKIM",
-#         "keep *_siStripClusters_*_DEDXUNCSKIM",
-#         "keep *_siPixelClusters_*_*",
-         "keep *_siStripClusters_*_*",
+         "keep *_siPixelClusters_*_*",
+         "keep *_siPhase2Clusters_*_*",
          "keep *_dedxHitInfo_*_DEDXUNCSKIM",
     ),
     fileName = cms.untracked.string("dEdxSkim.root"),
