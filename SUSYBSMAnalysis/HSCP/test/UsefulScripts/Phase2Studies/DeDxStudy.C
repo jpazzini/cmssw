@@ -76,21 +76,44 @@ const int    Charge_NBins        = 500 ;
 
 struct perTrackHistos 
 {
-    TH1I * dEdXHits         = new TH1I ("dEdXHits","dEdXHits",60,0,60);
-    TH1I * pixelHits        = new TH1I ("pixelHits","pixelHits",60,0,60);
-    TH1I * phase2sHits      = new TH1I ("phase2sHits","phase2sHits",60,0,60);
+    TH1F * chi2                 = new TH1F ("chi2","chi2;#Chi^{2}/ndof;;",50,0,5);
 
-    TH2F * dEdXHitsVsEta    = new TH2F ("dEdXHitsVsEta","dEdXHitsVsEta",60,-0.5,59.5,80,-4,4);
-    TH2F * pixelHitsVsEta   = new TH2F ("pixelHitsVsEta","pixelHitsVsEta",60,-0.5,59.5,80,-4,4);
-    TH2F * phase2sHitsVsEta = new TH2F ("phase2sHitsVsEta","phase2sHitsVsEta",60,-0.5,59.5,80,-4,4);
+    TH1I * dEdXHits             = new TH1I ("dEdXHits","dEdXHits;dE/dX clusters;;",40,0,40);
+    TH1I * pixelHits            = new TH1I ("pixelHits","pixelHits;pixel clusters;;",40,0,40);
+    TH1I * phase2sHits          = new TH1I ("phase2sHits","phase2sHits;phase2 strip clusters;;",40,0,40);
+    TH1I * phase2sHitsHoT       = new TH1I ("phase2sHitsHoT","phase2sHitsHoT;phase2 strip clusters w/ HoT;;",40,0,40);
 
-    TH2F * dEdXHitsVsPt    = new TH2F ("dEdXHitsVsPt","dEdXHitsVsPt",60,-0.5,59.5,100,0,100);
-    TH2F * pixelHitsVsPt   = new TH2F ("pixelHitsVsPt","pixelHitsVsPt",60,-0.5,59.5,100,0,100);
-    TH2F * phase2sHitsVsPt = new TH2F ("phase2sHitsVsPt","phase2sHitsVsPt",60,-0.5,59.5,100,0,100);
+    TH2F * dEdXHitsVsEta        = new TH2F ("dEdXHitsVsEta","dEdXHitsVsEta;dE/dX clusters;#eta;",40,-0.5,39.5,40,-4,4);
+    TH2F * pixelHitsVsEta       = new TH2F ("pixelHitsVsEta","pixelHitsVsEta;pixel clusters;#eta;",40,-0.5,39.5,40,-4,4);
+    TH2F * phase2sHitsVsEta     = new TH2F ("phase2sHitsVsEta","phase2sHitsVsEta;phase2 strip clusters;#eta;",40,-0.5,39.5,40,-4,4);
+    TH2F * phase2sHitsHoTVsEta  = new TH2F ("phase2sHitsHoTVsEta","phase2sHitsHoTVsEta;phase2 strip clusters w/ HoT;#eta;",40,-0.5,39.5,40,-4,4);
 
-    TH2F * dEdXHitsVsP    = new TH2F ("dEdXHitsVsP","dEdXHitsVsP",60,-0.5,59.5,100,0,100);
-    TH2F * pixelHitsVsP   = new TH2F ("pixelHitsVsP","pixelHitsVsP",60,-0.5,59.5,100,0,100);
-    TH2F * phase2sHitsVsP = new TH2F ("phase2sHitsVsP","phase2sHitsVsP",60,-0.5,59.5,100,0,100);
+    TH2F * dEdXHitsVsPt         = new TH2F ("dEdXHitsVsPt","dEdXHitsVsPt;dE/dX clusters;p_{T} (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * pixelHitsVsPt        = new TH2F ("pixelHitsVsPt","pixelHitsVsPt;pixel clusters;p_{T} (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * phase2sHitsVsPt      = new TH2F ("phase2sHitsVsPt","phase2sHitsVsPt;phase2 strip clusters;p_{T} (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * phase2sHitsHoTVsPt   = new TH2F ("phase2sHitsHoTVsPt","phase2sHitsHoTVsPt;phase2 strip clusters w/ HoT;p_{T} (GeV);",40,-0.5,39.5,100,0,100);
+
+    TH2F * dEdXHitsVsP          = new TH2F ("dEdXHitsVsP","dEdXHitsVsP;dE/dX clusters;p (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * pixelHitsVsP         = new TH2F ("pixelHitsVsP","pixelHitsVsP;pixel clusters;p (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * phase2sHitsVsP       = new TH2F ("phase2sHitsVsP","phase2sHitsVsP;phase2 strip clusters;p (GeV);",40,-0.5,39.5,100,0,100);
+    TH2F * phase2sHitsHoTVsP    = new TH2F ("phase2sHitsHoTVsP","phase2sHitsHoTVsP;phase2 strip clusters w/ HoT;p (GeV);",40,-0.5,39.5,100,0,100);
+    
+    TH2I * dEdXHitsVsTrkHits        = new TH2I ("dEdXHitsVsTrkHits","dEdXHitsVsTrkHits;dE/dX clusters;track valid clusters;",40,0,40,40,0,40);
+    TH2I * pixelHitsVsTrkHits       = new TH2I ("pixelHitsVsTrkHits","pixelHitsVsTrkHits;pixel clusters;track valid clusters;",40,0,40,40,0,40);
+    TH2I * phase2sHitsVsTrkHits     = new TH2I ("phase2sHitsVsTrkHits","phase2sHitsVsTrkHits;phase2 strip clusters;track valid clusters;",40,0,40,40,0,40);
+    TH2I * phase2sHitsHoTVsTrkHits  = new TH2I ("phase2sHitsHoTVsTrkHits","phase2sHitsHoTVsTrkHits;phase2 strip clusters w/ HoT;track valid clusters;",40,0,40,40,0,40);
+
+    TH2F * pixelLayVsEta            = new TH2F ("pixelLayVsEta","pixelLayVsEta;pixel layer;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * pixelBarLayVsEta         = new TH2F ("pixelBarLayVsEta","pixelBarLayVsEta;pixel layer;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * pixelEndLayVsEta         = new TH2F ("pixelEndLayVsEta","pixelEndLayVsEta;pixel layer;#eta;",16,-0.5,15.5,40,-4,4);
+
+    TH2F * phase2sLayVsEta          = new TH2F ("phase2sLayVsEta","phase2sLayVsEta;phase2 strip layer;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * phase2sBarLayVsEta       = new TH2F ("phase2sBarLayVsEta","phase2sBarLayVsEta;phase2 strip layer;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * phase2sEndLayVsEta       = new TH2F ("phase2sEndLayVsEta","phase2sEndLayVsEta;phase2 strip layer;#eta;",16,-0.5,15.5,40,-4,4);
+
+    TH2F * phase2sHoTLayVsEta       = new TH2F ("phase2sHoTLayVsEta","phase2sHoTLayVsEta;phase2 strip layer w/ HoT;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * phase2sHoTBarLayVsEta    = new TH2F ("phase2sHoTBarLayVsEta","phase2sHoTBarLayVsEta;phase2 strip layer w/ HoT;#eta;",16,-0.5,15.5,40,-4,4);
+    TH2F * phase2sHoTEndLayVsEta    = new TH2F ("phase2sHoTEndLayVsEta","phase2sHoTEndLayVsEta;phase2 strip layer w/ HoT;#eta;",16,-0.5,15.5,40,-4,4);
     
 };
 
@@ -298,7 +321,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
 
          fwlite::Handle< std::vector<reco::GenParticle> > genCollHandle;
-/*         if(isSignal){
+         if(isSignal){
             //get the collection of generated Particles
             genCollHandle.getByLabel(ev, "genParticlesSkimmed");
             if(!genCollHandle.isValid()){
@@ -306,12 +329,21 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
             }
          }
-*/
+
          std::cerr << "Event contains " << trackCollHandle->size() << " tracks." << std::endl;
          // TEST TRACK LOOP
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
             if(track.isNull())continue;
+            if(fabs(track->eta())>4)continue; // should be useless
+            if(track->pt()<55)continue; // might be a quite tight cut
+            if( (fabs(track->dz(vertexColl[0].position())) > 0.5) || (fabs(track->dxy(vertexColl[0].position())) > 0.5) ) continue; // possibly related to cosmics more than tracks
+            if(track->ptError()>0.25*track->pt()) continue;        
+            if(track->chi2()/track->ndof()>5 )continue;
+
+            const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+            if (DistToHSCP (track, genColl)>0.03) continue;
+
             
             //load the track dE/dx hit info
             const DeDxHitInfo* dedxHits = NULL;
@@ -326,31 +358,71 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                 if (detId.subdetId() < SiStripDetId::TIB)
                     PixelHits++;
                 else StripHits++;
+                
+                switch (detId.subdetId()){
+                    case 1: hists.pixelBarLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                            hists.pixelLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                            break;//pixel barrel
+                    case 2: hists.pixelEndLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                            hists.pixelLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                            break;//pixel endcap
+                    case 5: hists.phase2sBarLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                            hists.phase2sLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                            if (dedxHits->phase2cluster(h)->threshold()>0){
+                                hists.phase2sHoTBarLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                                hists.phase2sHoTLayVsEta->Fill(int(detId>>20 & 0xF),track->eta());
+                            }
+                            break;//tracker outer barrel
+                    case 4: hists.phase2sEndLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                            hists.phase2sLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                            if (dedxHits->phase2cluster(h)->threshold()>0){
+                                hists.phase2sHoTEndLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                                hists.phase2sHoTLayVsEta->Fill(int(detId>>18 & 0xF),track->eta());
+                            }
+                            break;//tracker outer endcap
+                    default : std::cerr << "This should not happen: not in the tracker...\n"; 
+                              break;
+                }
+                
             }
             const std::vector <SiPixelCluster> pixels = dedxHits->pixelClusters();
             const std::vector <SiStripCluster> strips = dedxHits->stripClusters();
             const std::vector <Phase2TrackerCluster1D> phase2s = dedxHits->phase2TrackerCluster1D();
 
+            unsigned int phase2sHoT = 0;
+            for (auto & it : phase2s ){
+                if ( it.threshold() > 0 ) ++phase2sHoT;
+            }
+
             fprintf (stderr, "Track %d: %lu/%lu hits: %lu P, %lu S, %lu P2\n", c, dedxHits->size(), track->recHitsSize(),
                     pixels.size(), strips.size(), phase2s.size());
+
+            hists.chi2->Fill(track->chi2()/track->ndof());
             
             hists.dEdXHits->Fill(dedxHits->size());
             hists.pixelHits->Fill(pixels.size());
             hists.phase2sHits->Fill(phase2s.size());
+            hists.phase2sHitsHoT->Fill(phase2sHoT);
             
             hists.dEdXHitsVsEta->Fill(dedxHits->size(),track->eta());
             hists.pixelHitsVsEta->Fill(pixels.size(),track->eta());
             hists.phase2sHitsVsEta->Fill(phase2s.size(),track->eta());
+            hists.phase2sHitsHoTVsEta->Fill(phase2sHoT,track->eta());
             
             hists.dEdXHitsVsPt->Fill(dedxHits->size(),track->pt());
             hists.pixelHitsVsPt->Fill(pixels.size(),track->pt());
             hists.phase2sHitsVsPt->Fill(phase2s.size(),track->pt());
+            hists.phase2sHitsHoTVsPt->Fill(phase2sHoT,track->pt());
             
             hists.dEdXHitsVsP->Fill(dedxHits->size(),track->p());
             hists.pixelHitsVsP->Fill(pixels.size(),track->p());
             hists.phase2sHitsVsP->Fill(phase2s.size(),track->p());
+            hists.phase2sHitsHoTVsP->Fill(phase2sHoT,track->p());
             
-            
+            hists.dEdXHitsVsTrkHits->Fill(dedxHits->size(),track->numberOfValidHits());
+            hists.pixelHitsVsTrkHits->Fill(pixels.size(),track->numberOfValidHits());
+            hists.phase2sHitsVsTrkHits->Fill(phase2s.size(),track->numberOfValidHits());            
+            hists.phase2sHitsHoTVsTrkHits->Fill(phase2sHoT,track->numberOfValidHits());
          } // END TEST TRACK LOOP
 
          // LOOP OVER TRACKS

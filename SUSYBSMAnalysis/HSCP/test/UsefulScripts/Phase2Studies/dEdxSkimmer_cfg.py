@@ -76,14 +76,15 @@ process.dedxHitInfo = dedxHitInfo.clone(
 #make the pool output
 process.Out = cms.OutputModule("PoolOutputModule",
      outputCommands = cms.untracked.vstring(
-         "drop *",
-         "keep EventAux_*_*_*",
-         "keep LumiSummary_*_*_*",
-         "keep *_RefitterForDeDx_*_DEDXUNCSKIM",
-         "keep *_offlinePrimaryVertices_*_*",
-         "keep *_siPixelClusters_*_*",
-         "keep *_siPhase2Clusters_*_*",
-         "keep *_dedxHitInfo_*_DEDXUNCSKIM",
+         "keep *",
+         #"drop *",
+         #"keep EventAux_*_*_*",
+         #"keep LumiSummary_*_*_*",
+         #"keep *_RefitterForDeDx_*_DEDXUNCSKIM",
+         #"keep *_offlinePrimaryVertices_*_*",
+         #"keep *_siPixelClusters_*_*",
+         #"keep *_siPhase2Clusters_*_*",
+         #"keep *_dedxHitInfo_*_DEDXUNCSKIM",
     ),
     fileName = cms.untracked.string("dEdxSkim.root"),
     SelectEvents = cms.untracked.PSet(
