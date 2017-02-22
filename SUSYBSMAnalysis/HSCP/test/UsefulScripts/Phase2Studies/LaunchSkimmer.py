@@ -4,8 +4,8 @@ import string, os, sys
 import SUSYBSMAnalysis.HSCP.LaunchOnCondor as LaunchOnCondor
 
 datasets     = [
-	'/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/AODSIM',
-	'/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/AODSIM'
+	'/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+	'/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO'
 ]
 
 outdir       = 'out'
@@ -39,7 +39,7 @@ if sys.argv[1] == '1':
 
    for dataset in datasets:
       datasetMark = outDirName (dataset)
-      print '===========================\n%s\n' % datasetMark
+      print '===========================================================\n%s\n' % datasetMark
       Files = getDatasetFiles(dataset)
       for i in range (0, len(Files)):
          os.system ('cp dEdxSkimmer_Template_cfg.py dEdxSkimmer_cff.py')
