@@ -24,6 +24,7 @@ def initProxy():
 
 if sys.argv[1] == '1':
    initProxy ()
+   createOutStructure()
 
    JobName = "dEdxSkimmer"
    FarmDirectory = "FARM"
@@ -34,12 +35,12 @@ if sys.argv[1] == '1':
    for dataset in datasets:
       datasetMark = outDirName (dataset)
       Files = getDatasetFiles(dataset)
-      for i in (0, len(Files)-1):
+      for i in range (0, len(Files)):
          os.system ('cp dEdxSkimmer_Template_cfg.py dEdxSkimmer_cff.py')
-         f = open ('dEdxSkimmer_cfg.py')
+         f = open ('dEdxSkimmer_cff.py', 'a')
          f.write ('\n')
          f.write ('process.Out.fileName = cms.untracked.string(\'dEdxSkim_%s_%i.root\')\n' % (datasetMark, i))
-         f.write ('process.source.fileNames.extend([file:%s])\n' % Files[i])
+         f.write ('process.source.fileNames.extend([\'file:%s\'])\n' % Files[i])
          f.close()
          LaunchOnCondor.Jobs_FinalCmds = ['cp dEdxSkim*.root %s/%s/' % (outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
