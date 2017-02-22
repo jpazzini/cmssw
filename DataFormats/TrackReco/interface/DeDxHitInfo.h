@@ -6,6 +6,7 @@
 #include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
+#include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
 #include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include "DataFormats/Common/interface/Association.h"
 
@@ -76,8 +77,26 @@ namespace reco {
       } 
       return NULL;  
     }
+    const Phase2TrackerCluster1D* phase2cluster (size_t i) const {
+        size_t C     = 0ul;
+        bool isStrip = false;
+
+        for (size_t j=0; j <= i && j < infos_.size(); j++){
+            if (detId(j).subdetId()>=SiStripDetId::TIB){
+                isStrip = true;
+                if (j) C++;
+            }
+
+            else isStrip = false;
+        }
+
+        if (isStrip && C < phase2Clusters_.size())
+            return &(phase2Clusters_[C]);
+        return NULL;
+    }
     const std::vector<SiStripCluster>& stripClusters() const {return stripClusters_;}
     const std::vector<SiPixelCluster>& pixelClusters() const {return pixelClusters_;}
+    const std::vector<Phase2TrackerCluster1D>& phase2TrackerCluster1D() const {return phase2Clusters_;}
     
     void addHit(const float charge, const float pathlength, const DetId& detId, const LocalPoint& pos, const SiStripCluster& stripCluster){
       infos_.push_back(DeDxHitInfoContainer(charge, pathlength, detId, pos));   
@@ -87,11 +106,16 @@ namespace reco {
       infos_.push_back(DeDxHitInfoContainer(charge, pathlength, detId, pos));
       pixelClusters_.push_back(pixelCluster);
     }
+    void addHit(const float charge, const float pathlength, const DetId& detId, const LocalPoint& pos, const Phase2TrackerCluster1D& phase2Cluster){
+      infos_.push_back(DeDxHitInfoContainer(charge, pathlength, detId, pos));
+      phase2Clusters_.push_back(phase2Cluster);
+    }
     
   private:
     std::vector<DeDxHitInfoContainer> infos_;         
     std::vector<SiStripCluster> stripClusters_;
     std::vector<SiPixelCluster> pixelClusters_;
+    std::vector<Phase2TrackerCluster1D> phase2Clusters_;
   };
   
   typedef  std::vector<DeDxHitInfo>    DeDxHitInfoCollection;
