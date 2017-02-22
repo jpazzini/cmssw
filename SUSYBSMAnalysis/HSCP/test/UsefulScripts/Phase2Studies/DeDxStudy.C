@@ -321,7 +321,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             }
          }
 */
-         std::cerr << "Event contains " << trackCollHandle->size() << " tracks." << std::endl;
          // TEST TRACK LOOP
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
@@ -384,9 +383,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             for (auto & it : phase2s ){
                 if ( it.threshold() > 0 ) ++phase2sHoT;
             }
-
-            fprintf (stderr, "Track %d: %lu/%lu hits: %lu P, %lu S, %lu P2\n", c, dedxHits->size(), track->recHitsSize(),
-                    pixels.size(), strips.size(), phase2s.size());
 
             hists.chi2->Fill(track->chi2()/track->ndof());
             

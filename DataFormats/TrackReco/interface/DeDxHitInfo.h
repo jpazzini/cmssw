@@ -78,15 +78,16 @@ namespace reco {
       return NULL;  
     }
     const Phase2TrackerCluster1D* phase2cluster (size_t i) const {
-        size_t C     = 0ul;
+        size_t C     = 0;
         bool isStrip = false;
+	bool isFirst = true;
 
         for (size_t j=0; j <= i && j < infos_.size(); j++){
-            if (detId(j).subdetId()>=SiStripDetId::TIB){
+            if (detId(j).subdetId()>=4){
                 isStrip = true;
-                if (j) C++;
+                if (isFirst) isFirst = false;
+		else C++;
             }
-
             else isStrip = false;
         }
 
