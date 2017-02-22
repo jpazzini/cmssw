@@ -3,8 +3,13 @@
 import string, os, sys
 import SUSYBSMAnalysis.HSCP.LaunchOnCondor as LaunchOnCondor
 
-datasets     = ['/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/AODSIM']
+datasets     = [
+	'/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/AODSIM',
+	'/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/AODSIM'
+]
+
 outdir       = 'out'
+server       = 'root://cms-xrd-global.cern.ch/'
 
 def outDirName (dataset):
     return dataset.split('/')[1]
@@ -34,15 +39,16 @@ if sys.argv[1] == '1':
 
    for dataset in datasets:
       datasetMark = outDirName (dataset)
+      print '===========================\n%s\n' % datasetMark
       Files = getDatasetFiles(dataset)
       for i in range (0, len(Files)):
          os.system ('cp dEdxSkimmer_Template_cfg.py dEdxSkimmer_cff.py')
          f = open ('dEdxSkimmer_cff.py', 'a')
          f.write ('\n')
          f.write ('process.Out.fileName = cms.untracked.string(\'dEdxSkim_%s_%i.root\')\n' % (datasetMark, i))
-         f.write ('process.source.fileNames.extend([\'file:%s\'])\n' % Files[i])
+         f.write ('process.source.fileNames.extend([\'%s/%s\'])\n' % (server,Files[i]))
          f.close()
          LaunchOnCondor.Jobs_FinalCmds = ['cp dEdxSkim*.root %s/%s/' % (outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
          os.system ('rm -f dEdxSkimmer_cff.py')
-   LaunchOnCondor.SendCluster_Submit ()
+#   LaunchOnCondor.SendCluster_Submit ()
