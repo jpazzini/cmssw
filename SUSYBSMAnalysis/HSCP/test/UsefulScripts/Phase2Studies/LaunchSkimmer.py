@@ -51,4 +51,4 @@ if sys.argv[1] == '1':
          LaunchOnCondor.Jobs_FinalCmds = ['cp dEdxSkim*.root %s/%s/' % (outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
          os.system ('rm -f dEdxSkimmer_cff.py')
-#   LaunchOnCondor.SendCluster_Submit ()
+   LaunchOnCondor.SendCluster_Submit ()
