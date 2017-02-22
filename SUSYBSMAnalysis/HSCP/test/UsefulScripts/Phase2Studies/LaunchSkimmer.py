@@ -50,7 +50,7 @@ if sys.argv[1] == '1':
          f.write ('process.Out.fileName = cms.untracked.string(\'dEdxSkim_%s_%i.root\')\n' % (datasetMark, i))
          f.write ('process.source.fileNames.extend([\'%s/%s\'])\n' % (server,Files[i]))
          f.close()
-         LaunchOnCondor.Jobs_FinalCmds = ['mv dEdxSkim*.root %s/%s/' % (outdir, datasetMark)]
+         LaunchOnCondor.Jobs_FinalCmds = ['mv dEdxSkim*.root %s/%s/%s/' % (os.getcwd(), outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
          os.system ('rm -f dEdxSkimmer_cff.py')
    LaunchOnCondor.SendCluster_Submit ()

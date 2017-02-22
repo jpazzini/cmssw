@@ -65,8 +65,8 @@ double GetMass (double P, double I, double K, double C);
 
 
 const double P_Min               = 1   ;
-const double P_Max               = 16  ; // 1 + 14 + 1; final one is for pixel!
-const int    P_NBins             = 15  ; // 15th bin = pixel; 0 is underflow
+const double P_Max               = 2  ; // 1 + 14 + 1; final one is for pixel!
+const int    P_NBins             = 1  ; // 15th bin = pixel; 0 is underflow
 const double Path_Min            = 0.2 ;
 const double Path_Max            = 1.6 ;
 const int    Path_NBins          = 42  ;
@@ -144,6 +144,7 @@ struct dEdxStudyObj
                          // 1  -- use existing algorithm developed by Claude
 
    TH3D* Charge_Vs_Path;
+   TH3D* Charge_Vs_Path_Phase2;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
    TH2D* HdedxVsPSyst;
@@ -166,11 +167,6 @@ struct dEdxStudyObj
    TProfile* HHitProfile_U; 
    TH1D* HProtonHitSO; 
    TH1D* HProtonHitPO; 
-   TProfile* Charge_Vs_FS[16];
-   TH2D* Charge_Vs_XYH[16];
-   TH2D* Charge_Vs_XYL[16];
-   TH2D* Charge_Vs_XYHN[16];
-   TH2D* Charge_Vs_XYLN[16];
 
 
    TH3F* dEdxTemplates = NULL;
@@ -210,15 +206,8 @@ struct dEdxStudyObj
          HistoName = Name + "_HitProfile";        HHitProfile           = new TProfile(  HistoName.c_str(), HistoName.c_str(),  50, 0, 100); 
          HistoName = Name + "_HitProfile_U";      HHitProfile_U         = new TProfile(  HistoName.c_str(), HistoName.c_str(),  50, 0, 100);
          if(usePixel && useStrip){ 
-            HistoName = Name + "_ChargeVsPath";      Charge_Vs_Path        = new TH3D(      HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, Charge_NBins, Charge_Min, Charge_Max);
-            for(unsigned int g=0;g<16;g++){
-               char Id[255]; sprintf(Id, "%02i", g);
-               HistoName = Name + "_ChargeVsFS"+Id;       Charge_Vs_FS[g]       = new TProfile  ( HistoName.c_str(), HistoName.c_str(),  769, 0, 769);
-               HistoName = Name + "_ChargeVsXYH"+Id;      Charge_Vs_XYH[g]      = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -15, 15, 250, -15, 15);
-               HistoName = Name + "_ChargeVsXYL"+Id;      Charge_Vs_XYL[g]      = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -15, 15, 250, -15, 15);
-               HistoName = Name + "_ChargeVsXYHN"+Id;     Charge_Vs_XYHN[g]     = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -1.5, 1.5, 250, -1.5, 1.5);
-               HistoName = Name + "_ChargeVsXYLN"+Id;     Charge_Vs_XYLN[g]     = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -1.5, 1.5, 250, -1.5, 1.5);
-            }
+            HistoName = Name + "_ChargeVsPath";        Charge_Vs_Path        = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, Charge_NBins, Charge_Min, Charge_Max);
+            HistoName = Name + "_ChargeVsPath_Phase2"; Charge_Vs_Path_Phase2 = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, 2, 0, 1);
          }
       }
 
@@ -267,7 +256,9 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH1::AddDirectory(kTRUE);
 
    TH3F* dEdxTemplates      = NULL;
-   bool isSignal            = true;
+   bool isSignal            = false;
+   if (INPUT.find("uino")!=std::string::npos
+    || INPUT.find("stau")!=std::string::npos) isSignal = true;
 
    std::vector<string> FileName;
    if(INPUT.find(".root")<std::string::npos){
@@ -319,7 +310,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
          const std::vector<reco::Vertex>& vertexColl = *vertexCollHandle;
          if(vertexColl.size()<1){printf("NO VERTICES\n"); continue;}
 
-
+/*
          fwlite::Handle< std::vector<reco::GenParticle> > genCollHandle;
          if(isSignal){
             //get the collection of generated Particles
@@ -329,20 +320,20 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
             }
          }
-
+*/
          std::cerr << "Event contains " << trackCollHandle->size() << " tracks." << std::endl;
          // TEST TRACK LOOP
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
             if(track.isNull())continue;
             if(fabs(track->eta())>4)continue; // should be useless
-            if(track->pt()<55)continue; // might be a quite tight cut
+            if(track->pt()<55 && isSignal)continue; // might be a quite tight cut
             if( (fabs(track->dz(vertexColl[0].position())) > 0.5) || (fabs(track->dxy(vertexColl[0].position())) > 0.5) ) continue; // possibly related to cosmics more than tracks
             if(track->ptError()>0.25*track->pt()) continue;        
             if(track->chi2()/track->ndof()>5 )continue;
 
-            const std::vector<reco::GenParticle>& genColl = *genCollHandle;
-            if (DistToHSCP (track, genColl)>0.03) continue;
+//            const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+//            if (DistToHSCP (track, genColl)>0.03) continue;
 
             
             //load the track dE/dx hit info
@@ -452,9 +443,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->pt() > 5){
                for(unsigned int h=0;h<dedxHits->size();h++){
                    DetId detid(dedxHits->detId(h));
-                   int moduleGeometry = 0; // underflow bin -- debug purposes
-                   if(detid.subdetId()>=3){ SiStripDetId SSdetId(detid); moduleGeometry = SSdetId.moduleGeometry(); if (moduleGeometry==15) {cerr << "ERROR! There is no SiStrip geometry 15!" << endl; exit (EXIT_FAILURE);}}
-                   else if(detid.subdetId()<3){moduleGeometry = 15;} // 15 is for pixel
+                   int moduleGeometry = 1; // underflow bin -- debug purposes
 
                    for(unsigned int R=0;R<results.size();R++){
 //                      if (results[R]->Name.find("newCCC")!=string::npos){dEdxSF[0] = dEdxSF_NewCC[0]; dEdxSF[1] = dEdxSF_NewCC[1];}
@@ -492,10 +481,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
                       if(results[R]->usePixel && results[R]->useStrip){
                          
-                         results[R]->Charge_Vs_Path->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*(detid.subdetId()<3?265:1))); 
-                         if(detid.subdetId()>=3)results[R]->Charge_Vs_FS[moduleGeometry]->Fill(dedxHits->phase2cluster(h)->firstStrip(), charge); 
-                         results[R]->Charge_Vs_XYH[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
-                         if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYL[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
+                         if     (detid.subdetId() < 3)results[R]->Charge_Vs_Path        ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*265)); 
+			 else if(detid.subdetId()>=3) results[R]->Charge_Vs_Path_Phase2 ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, dedxHits->phase2cluster(h)->threshold()?1:0);
     
 //                          if(moduleGeometry>=1 && moduleGeometry<=14){ // FIXME we don't have the geometry information for Pixels yet (TkModGeom* arrays) !!!
 //                             double nx, ny;

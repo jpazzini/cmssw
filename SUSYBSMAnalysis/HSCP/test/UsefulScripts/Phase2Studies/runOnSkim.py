@@ -31,44 +31,8 @@ if len(sys.argv)==1:
 
 
 datasetList = [
-##  ["Run251252", "/storage/data/cms/store/user/querten/AAA/HSCP/dedxSkim/Run251252/"],
-##  ["Run257395", "/storage/data/cms/store/user/jozobec/out/257395/"],
-##  ["Run257396", "/storage/data/cms/store/user/jozobec/out/257396/"],
-#  ["Run257490", "/storage/data/cms/store/user/jozobec/out/257490/"],
-##  ["Run257599", "/storage/data/cms/store/user/jozobec/out/257599/"],
-#  ["Run257805", "/storage/data/cms/store/user/jozobec/out/257805/"],
-##  ["Run257816", "/storage/data/cms/store/user/jozobec/out/257816/"],
-##  ["Run257819", "/storage/data/cms/store/user/jozobec/out/257819/"],
-#  ["Run257823", "/storage/data/cms/store/user/jozobec/out/257823/"],
-##  ["Run258443", "/storage/data/cms/store/user/jozobec/out/258443/"],
-##  ["Run258446", "/storage/data/cms/store/user/jozobec/out/258446/"],
-##  ["Run258655", "/storage/data/cms/store/user/jozobec/out/258655/"],
-##  ["Run258694", "/storage/data/cms/store/user/jozobec/out/258694/"],
-##  ["Run258705", "/storage/data/cms/store/user/jozobec/out/258705/"],
-##  ["Run258741", "/storage/data/cms/store/user/jozobec/out/258741/"],
-##  ["Run258750", "/storage/data/cms/store/user/jozobec/out/258750/"],
-  ["Run273158", "/storage/data/cms/store/user/jozobec/dEdxCalib/273158/"],
-  ["Run273502", "/storage/data/cms/store/user/jozobec/dEdxCalib/273502/"],
-  ["Run273725", "/storage/data/cms/store/user/jozobec/dEdxCalib/273725/"],
-  ["Run273730", "/storage/data/cms/store/user/jozobec/dEdxCalib/273730/"],
-  ["Run274199", "/storage/data/cms/store/user/jozobec/dEdxCalib/274199/"],
-  ["Run274200", "/storage/data/cms/store/user/jozobec/dEdxCalib/274200/"],
-  ["Run274240", "/storage/data/cms/store/user/jozobec/dEdxCalib/274240/"],
-  ["Run274998", "/storage/data/cms/store/user/jozobec/dEdxCalib/274998/"],
-  ["Run274999", "/storage/data/cms/store/user/jozobec/dEdxCalib/274999/"],
-  ["Run275000", "/storage/data/cms/store/user/jozobec/dEdxCalib/275000/"],
-  ["Run275001", "/storage/data/cms/store/user/jozobec/dEdxCalib/275001/"],
-  ["MCMinBias", "/storage/data/cms/store/user/querten/AAA/HSCP/dedxSkim/MC13TeVMinBiasTuneCUETP8M1_SIMAOD/"],
-
-  ["MCGluino_M1000_f10", "Gluino_13TeV_M1000_f10"],
-  ["MCGluino_M1400_f10", "Gluino_13TeV_M1400_f10"],
-  ["MCGluino_M1800_f10", "Gluino_13TeV_M1800_f10"],
-  ["MCGluino_M1000_f50", "Gluino_13TeV_M1000_f50"],
-  ["MCGluino_M1400_f50", "Gluino_13TeV_M1400_f50"],
-  ["MCGluino_M1800_f50", "Gluino_13TeV_M1800_f50"],
-  ["MCGMStau_M494",      "GMStau_13TeV_M494"],
-  ["MCStop_M1000",       "Stop_13TeV_M1000"],
-  ["MCDYM2600Q2",        "DY_13TeV_M2600_Q2"],
+  ["MCMinBias_140PU", "/nfs/scratch/fynu/jzobec/Run2Analysis/HL.LHC.Study/CMSSW_8_2_0_patch1/src/SUSYBSMAnalysis/HSCP/test/UsefulScripts/Phase2Studies/out/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
+  ["MCMinBias_200PU", "/nfs/scratch/fynu/jzobec/Run2Analysis/HL.LHC.Study/CMSSW_8_2_0_patch1/src/SUSYBSMAnalysis/HSCP/test/UsefulScripts/Phase2Studies/out/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/"],
 ]
 
 isLocal = False  #allow to access data in Louvain from remote sites
@@ -113,7 +77,7 @@ if sys.argv[1]=='1':
                  InputListCSV+= inFile + ','
               InputListCSV = InputListCSV[:-1] #remove the last duplicated comma
               LaunchOnCondor.SendCluster_Push  (["BASH", "sh " + os.getcwd() + "/DeDxStudy.sh " + InputListCSV + " out.root; mv out.root " + outdir+"dEdxHistos_%i.root" %  LaunchOnCondor.Jobs_Count ])
-	   LaunchOnCondor.SendCluster_Submit()
+#	   LaunchOnCondor.SendCluster_Submit()
 
 elif sys.argv[1]=='2':
         for DATASET in datasetList :#+signalList :
