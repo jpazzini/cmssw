@@ -37,6 +37,7 @@ namespace edm     {class TriggerResults; class TriggerResultsByName; class Input
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
 #include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
@@ -51,8 +52,8 @@ using namespace trigger;
 
 //#include "../../AnalysisCode_NewSyst_Hybr_WOverflow/Analysis_Step1_EventLoop.C"
 //#include "../../AnalysisCode/Analysis_Step1_EventLoop.C"
-#include "../../AnalysisCode/tdrstyle.C"
 #include "../../AnalysisCode/Analysis_CommonFunction.h"
+#include "../../AnalysisCode/tdrstyle.C"
 
 #endif
 
@@ -60,6 +61,8 @@ using namespace trigger;
 double DistToHSCP (const reco::TrackRef& track, const std::vector<reco::GenParticle>& genColl);
 bool isCompatibleWithCosmic (const reco::TrackRef& track, const std::vector<reco::Vertex>& vertexColl);
 double GetMass (double P, double I, double K, double C);
+TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
+reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
 
 
 const double P_Min               = 1   ;
@@ -233,8 +236,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH1::AddDirectory(kTRUE);
 
 
-   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140.root", false, false);
-   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140_Phase2.root", true, false);
+   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140.root", false, true);
+   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140_Phase2.root", true, true);
    bool isSignal                  = false;
    if (INPUT.find("uino")!=std::string::npos
     || INPUT.find("stau")!=std::string::npos) isSignal = true;
@@ -587,3 +590,135 @@ double GetMass (double P, double I, double K, double C){
    return sqrt((I-C)/K)*P;
 }
 
+DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* pixel_TemplateHisto, TH3* strip_TemplateHisto, bool usePixel, bool reverseProb, bool useTruncated, bool useStrip){
+     if(!dedxHits) return DeDxData(-1, -1, -1);
+//     if(templateHisto)usePixel=false; //never use pixel for discriminator
+
+     std::vector<double> vect;
+     std::vector<double> vectStrip;
+     std::vector<double> vectPixel;
+
+     unsigned int NSat=0;
+     for(unsigned int h=0;h<dedxHits->size();h++){
+        DetId detid(dedxHits->detId(h));  
+        if(!usePixel && detid.subdetId()<3)continue; // skip pixels
+        if(!useStrip && detid.subdetId()>=4)continue; // skip strips        
+        TH3* templateHisto = detid.subdetId()<3?pixel_TemplateHisto:strip_TemplateHisto;
+         //printStripCluster(stdout, dedxHits->stripCluster(h), dedxHits->detId(h));
+
+        int ClusterCharge = detid.subdetId()<3?dedxHits->charge(h):dedxHits->phase2cluster(h)->threshold();
+        int HoT = dedxHits->phase2cluster(h)->threshold()>0?1:0;
+
+        if(detid.subdetId()>=4){//for strip only
+           const Phase2TrackerCluster1D* cluster = dedxHits->phase2cluster(h);
+           int firstStrip = cluster->firstStrip();
+           int prevAPV = -1;
+           double gain = 1.0;
+        }
+
+        double scaleFactor = scaleFactors[0];
+        if (detid.subdetId()<3) scaleFactor *= scaleFactors[1]; // add pixel scaling
+
+        if(templateHisto){  //save discriminator probability
+           double ChargeOverPathlength = ClusterCharge*(detid.subdetId()<3?(scaleFactor/(dedxHits->pathlength(h)*10.0*265)):1);
+
+           int moduleGeometry = 1; // underflow for debug
+           int    BinX   = templateHisto->GetXaxis()->FindBin(moduleGeometry);
+           int    BinY   = templateHisto->GetYaxis()->FindBin(dedxHits->pathlength(h)*10.0); //*10 because of cm-->mm
+           int    BinZ   = templateHisto->GetZaxis()->FindBin(ChargeOverPathlength);
+           double Prob   = templateHisto->GetBinContent(BinX,BinY,BinZ);
+           //printf("%i %i %i  %f\n", BinX, BinY, BinZ, Prob);
+           if(reverseProb)Prob = 1.0 - Prob;
+           vect.push_back(Prob); //save probability
+        }else{
+           double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
+           double ChargeOverPathlength = ClusterCharge*scaleFactor*3.61e-6/dedxHits->pathlength(h);
+
+           if(detid.subdetId()< 3){
+              vect.push_back(ChargeOverPathlength); //save charge, but skip phase2 strips
+              vectPixel.push_back(ChargeOverPathlength);
+           }
+           if(detid.subdetId()>=4)vectStrip.push_back(ChargeOverPathlength);
+//           printf("%i - %f / %f = %f\n", h, scaleFactor*Norm*dedxHits->charge(h), dedxHits->pathlength(h), ChargeOverPathlength);
+        }
+     }
+
+     double result;
+     int size = vect.size();
+
+     if(size>0){
+        if(pixel_TemplateHisto && strip_TemplateHisto){  //dEdx discriminator
+           //Prod discriminator
+           //result = 1;
+           //for(int i=0;i<size;i++){
+           //   if(vect[i]<=0.0001){result *= pow(0.0001 , 1.0/size);}
+           //   else               {result *= pow(vect[i], 1.0/size);}
+           //}
+
+           //Ias discriminator
+           result = 1.0/(12*size);
+           std::sort(vect.begin(), vect.end(), std::less<double>() );
+           for(int i=1;i<=size;i++){
+              result += vect[i-1] * pow(vect[i-1] - ((2.0*i-1.0)/(2.0*size)),2);
+           }
+           result *= (3.0/size);
+        }else{  //dEdx estimator
+           if(useTruncated){
+              //truncated40 estimator
+              std::sort(vect.begin(), vect.end(), std::less<double>() );              
+              result=0;
+              int nTrunc = size*0.40;
+              for(int i = 0; i+nTrunc<size; i ++){
+                 result+=vect[i];
+              }
+              result /= (size-nTrunc);
+           }else{
+              //harmonic2 estimator           
+              result=0;
+              double expo = -2;
+              for(int i = 0; i< size; i ++){
+                 result+=pow(vect[i],expo);
+              }
+              result = pow(result/size,1./expo);
+           }
+//           printf("Ih = %f\n------------------\n",result);
+        }
+     }else{
+        result = -1;
+     }
+     return DeDxData(result, NSat, size);
+}
+
+TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
+   TFile* InputFile = new TFile(path.c_str());
+   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, isPhase2?"Charge_Vs_Path_Phase2":"Charge_Vs_Path");
+   if(!DeDxMap_){printf("dEdx templates in file %s can't be open\n", path.c_str()); exit(0);}
+
+   TH3F* Prob_ChargePath  = (TH3F*)(DeDxMap_->Clone("Prob_ChargePath")); 
+   Prob_ChargePath->Reset();
+   Prob_ChargePath->SetDirectory(0); 
+
+   if(!splitByModuleType){
+      Prob_ChargePath->RebinX(Prob_ChargePath->GetNbinsX()-1); // <-- do not include pixel in the inclusive
+   }
+
+   for(int i=0;i<=Prob_ChargePath->GetXaxis()->GetNbins()+1;i++){
+      for(int j=0;j<=Prob_ChargePath->GetYaxis()->GetNbins()+1;j++){
+         double Ni = 0;
+         for(int k=0;k<=Prob_ChargePath->GetZaxis()->GetNbins()+1;k++){Ni+=DeDxMap_->GetBinContent(i,j,k);}
+
+         for(int k=0;k<=Prob_ChargePath->GetZaxis()->GetNbins()+1;k++){
+            double tmp = 0;
+            for(int l=0;l<=k;l++){ tmp+=DeDxMap_->GetBinContent(i,j,l);}
+
+            if(Ni>0){
+               Prob_ChargePath->SetBinContent (i, j, k, tmp/Ni);
+            }else{
+               Prob_ChargePath->SetBinContent (i, j, k, 0);
+            }
+         }
+      }
+   }
+   InputFile->Close();
+   return Prob_ChargePath;
+}

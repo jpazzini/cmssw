@@ -924,11 +924,11 @@ DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* pix
         TH3* templateHisto = detid.subdetId()<3?pixel_TemplateHisto:strip_TemplateHisto;
          //printStripCluster(stdout, dedxHits->stripCluster(h), dedxHits->detId(h));
 
-        int ClusterCharge = dedid.subdetId()<3?dedxHits->charge(h):dedxHits->phase2Cluster(h)->threshold();
-        int HoT = dedxHits->phase2Cluster(h)->threshold()>0?1:0;
+        int ClusterCharge = detid.subdetId()<3?dedxHits->charge(h):dedxHits->phase2cluster(h)->threshold();
+        int HoT = dedxHits->phase2cluster(h)->threshold()>0?1:0;
 
         if(detid.subdetId()>=4){//for strip only
-           const Phase2TrackerCluster1D* cluster = dedxHits->phase2Cluster(h);
+           const Phase2TrackerCluster1D* cluster = dedxHits->phase2cluster(h);
            int firstStrip = cluster->firstStrip();
            int prevAPV = -1;
            double gain = 1.0;
@@ -939,8 +939,6 @@ DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* pix
 
         if(templateHisto){  //save discriminator probability
            double ChargeOverPathlength = ClusterCharge*(detid.subdetId()<3?(scaleFactor/(dedxHits->pathlength(h)*10.0*265)):1);
-//           if(fakeHIP && detid.subdetId()>=3 && rand()%1000<35)ChargeOverPathlength = ( 0.5 + ((rand()%15000)/10000.0) ) / (3.61e-06*265*10);
-//           if(fakeHIP && detid.subdetId() <3 && rand()%1000<20)ChargeOverPathlength = ( 0.3 + ((rand()%12000)/10000.0) ) / (3.61e-06*265*10*265);
 
            int moduleGeometry = 1; // underflow for debug
            int    BinX   = templateHisto->GetXaxis()->FindBin(moduleGeometry);
