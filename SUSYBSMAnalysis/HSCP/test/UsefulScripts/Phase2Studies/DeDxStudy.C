@@ -23,7 +23,6 @@
 #include "TProfile.h"
 #include "TPaveText.h"
 
-
 namespace reco    { class Vertex; class Track; class GenParticle; class DeDxData; class MuonTimeExtra;}
 namespace susybsm { class HSCParticle;}
 namespace fwlite  { class ChainEvent;}
@@ -40,6 +39,7 @@ namespace edm     {class TriggerResults; class TriggerResultsByName; class Input
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
+#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 
 using namespace fwlite;
 using namespace reco;
@@ -52,9 +52,7 @@ using namespace trigger;
 //#include "../../AnalysisCode_NewSyst_Hybr_WOverflow/Analysis_Step1_EventLoop.C"
 //#include "../../AnalysisCode/Analysis_Step1_EventLoop.C"
 #include "../../AnalysisCode/tdrstyle.C"
-#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 #include "../../AnalysisCode/Analysis_CommonFunction.h"
-
 
 #endif
 
@@ -161,7 +159,7 @@ struct dEdxStudyObj
    TH3F* strip_dEdxTemplates = NULL;
    std::unordered_map<unsigned int,double>* TrackerGains = NULL;
 
-   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* pixel_dEdxTemplates_=NULL, TH3F* strip_dEdxTemplates=NULL, removeCosmics){
+   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* pixel_dEdxTemplates_=NULL, TH3F* strip_dEdxTemplates_=NULL, bool removeCosmics_=true){
       Name = Name_;
 
       if     (type_==0){ isHit=true;  isEstim= false; isDiscrim = false; useTrunc = false;} // hit level only
@@ -261,7 +259,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    results.push_back ( new dEdxStudyObj ("hit_PO", 0, 1, NULL, NULL,  true) );
    results.push_back ( new dEdxStudyObj ("hit_SO", 0, 2, NULL, NULL,  true) );
    results.push_back ( new dEdxStudyObj ("hit_SP", 0, 3, NULL, NULL,  true) );
-   results.push_back ( new dEdxStudyObj ("Ias_SP", 2, 3, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("Ias_SP", 2, 3, pixel_dEdxTemplates, strip_dEdxTemplates,  true) );
 
    perTrackHistos hists;
    
