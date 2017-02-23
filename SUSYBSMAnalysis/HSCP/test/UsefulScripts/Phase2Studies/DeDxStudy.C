@@ -269,6 +269,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH3F* dEdxTemplates      = NULL;
    bool isSignal            = true;
 
+   if (INPUT.find("MinBias")<std::string::npos) isSignal = false;
+
    std::vector<string> FileName;
    if(INPUT.find(".root")<std::string::npos){
       char* pch=strtok(&INPUT[0],",");
@@ -341,9 +343,10 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->ptError()>0.25*track->pt()) continue;        
             if(track->chi2()/track->ndof()>5 )continue;
 
-            const std::vector<reco::GenParticle>& genColl = *genCollHandle;
-            if (DistToHSCP (track, genColl)>0.03) continue;
-
+            if (isSignal){
+                const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+                if (DistToHSCP (track, genColl)>0.03) continue;
+            }
             
             //load the track dE/dx hit info
             const DeDxHitInfo* dedxHits = NULL;
