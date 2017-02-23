@@ -233,6 +233,15 @@ void MakePlot()
    gStyle->SetPalette(1); 
    gStyle->SetNdivisions(510,"X");
 
+   TFile* PixTemplate = new TFile ("dEdxTemplate_MC140.root");
+   TFile* StrTemplate = new TFile ("dEdxTemplate_MC140_Phase2.root");
+   TH3F* pixTemplate140 = (TH3F*) GetObjectFromPath (PixTemplate, "Charge_Vs_Path");
+   TH3F* strTemplate140 = (TH3F*) GetObjectFromPath (StrTemplate, "Charge_Vs_Path_Phase2");
+
+   MakeMapPlots (pixTemplate140, "pixel", "pictures/", "Map");
+   MakeMapPlots (strTemplate140, "strip", "pictures/", "Map");
+
+   return;
 
    vector<string> HitObjName;                         vector<string> HitObjLegend;
    HitObjName.push_back("hit_PO");                    HitObjLegend.push_back("Pixel");

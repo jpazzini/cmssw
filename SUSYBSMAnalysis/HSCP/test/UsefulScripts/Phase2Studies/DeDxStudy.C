@@ -128,20 +128,8 @@ struct dEdxStudyObj
    bool usePixel;
    bool useStrip;
 
-   bool mustBeInside;
    bool removeCosmics;
-   bool correctFEDSat;
-   bool useClusterCleaning;
-   bool fakeHIP;
 
-   double dropLowerDeDxValue;
-   bool trimPixel;
-
-   double Kconst;
-   double Cconst;
-
-   int crossTalkInvAlgo; // 0  -- do not use crossTalkInversion
-                         // 1  -- use existing algorithm developed by Claude
 
    TH3D* Charge_Vs_Path;
    TH3D* Charge_Vs_Path_Phase2;
@@ -169,10 +157,11 @@ struct dEdxStudyObj
    TH1D* HProtonHitPO; 
 
 
-   TH3F* dEdxTemplates = NULL;
+   TH3F* pixel_dEdxTemplates = NULL;
+   TH3F* strip_dEdxTemplates = NULL;
    std::unordered_map<unsigned int,double>* TrackerGains = NULL;
 
-   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* dEdxTemplates_=NULL, double K_=2.7, double C_=3.2, std::unordered_map<unsigned int,double>* TrackerGains_=NULL, bool mustBeInside_=false, bool removeCosmics_=false, bool correctFEDSat_=false, int useClusterCleaning_=0, int crossTalkInvAlgo_=0, double dropLowerDeDxValue_ = 0, bool trimPixel_ = false, bool fakeHIP_=true){
+   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* pixel_dEdxTemplates_=NULL, TH3F* strip_dEdxTemplates=NULL, removeCosmics){
       Name = Name_;
 
       if     (type_==0){ isHit=true;  isEstim= false; isDiscrim = false; useTrunc = false;} // hit level only
@@ -185,19 +174,9 @@ struct dEdxStudyObj
       else if(subdet_==2){ usePixel = false; useStrip = true; }
       else               { usePixel = true;  useStrip = true; }
 
-      dEdxTemplates      = dEdxTemplates_;
-      TrackerGains       = TrackerGains_;
-      mustBeInside       = mustBeInside_;
-      removeCosmics      = removeCosmics_; 
-      correctFEDSat      = correctFEDSat_;
-      useClusterCleaning = static_cast<bool> (useClusterCleaning_);
-      crossTalkInvAlgo   = crossTalkInvAlgo_;
-      dropLowerDeDxValue = dropLowerDeDxValue_;
-      trimPixel          = trimPixel_;
-      fakeHIP            = fakeHIP_;
-
-      Kconst = K_;
-      Cconst = C_;
+      pixel_dEdxTemplates = pixel_dEdxTemplates_;
+      strip_dEdxTemplates = strip_dEdxTemplates_;
+      removeCosmics       = removeCosmics_; 
 
       string HistoName;
       //HitLevel plot      
@@ -207,7 +186,7 @@ struct dEdxStudyObj
          HistoName = Name + "_HitProfile_U";      HHitProfile_U         = new TProfile(  HistoName.c_str(), HistoName.c_str(),  50, 0, 100);
          if(usePixel && useStrip){ 
             HistoName = Name + "_ChargeVsPath";        Charge_Vs_Path        = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, Charge_NBins, Charge_Min, Charge_Max);
-            HistoName = Name + "_ChargeVsPath_Phase2"; Charge_Vs_Path_Phase2 = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, 2, 0, 1);
+            HistoName = Name + "_ChargeVsPath_Phase2"; Charge_Vs_Path_Phase2 = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, 2, 0, 2);
          }
       }
 
@@ -255,8 +234,10 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    gStyle->SetNdivisions(505,"X");
    TH1::AddDirectory(kTRUE);
 
-   TH3F* dEdxTemplates      = NULL;
-   bool isSignal            = false;
+
+   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140.root", false, false);
+   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140_Phase2.root", true, false);
+   bool isSignal                  = false;
    if (INPUT.find("uino")!=std::string::npos
     || INPUT.find("stau")!=std::string::npos) isSignal = true;
 
@@ -277,11 +258,12 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
 
    std::vector<dEdxStudyObj*> results;
-   results.push_back(new dEdxStudyObj("hit_PO"           , 0, 1, NULL, 2.7, 3.2, NULL, false, false, false, 1, 1) );
-   results.push_back(new dEdxStudyObj("hit_SO_in_noC_CCC", 0, 2, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CCC", 0, 3, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
+   results.push_back ( new dEdxStudyObj ("hit_PO", 0, 1, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("hit_SO", 0, 2, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("hit_SP", 0, 3, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("Ias_SP", 2, 3, NULL, NULL,  true) );
 
-    perTrackHistos hists;
+   perTrackHistos hists;
    
    // FILE LOOP
    for(unsigned int f=0;f<FileName.size();f++){
@@ -452,11 +434,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       if(!results[R]->isHit) continue; //only consider results related to hit info here
                       if(!results[R]->usePixel && detid.subdetId() <3)continue; // skip pixels
                       if(!results[R]->useStrip && detid.subdetId()>=3)continue; // skip strips
-// // //                       if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->phase2cluster(h):NULL) )continue; /// NOTE -> JACOPO
                       if(results[R]->removeCosmics){ if (isCompatibleWithCosmic(track, vertexColl))continue;} //don't consider hits, which belong to cosmic tracks
 
-// // //                       if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it! /// NOTE -> JACOPO
-//                      if(results[R]->CCFunction && detid.subdetId()>=3 && !results[R]->CCFunction(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo, NULL)) continue; //if it fails clusterCleaning, skip it!
 
                       int charge = dedxHits->charge(h);
                       double ChargeOverPathlength   = 0.;
@@ -478,28 +457,25 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       if(results[R]->usePixel && results[R]->useStrip){
                          
                          if     (detid.subdetId() < 3)results[R]->Charge_Vs_Path        ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*265)); 
-			 else if(detid.subdetId()>=3) results[R]->Charge_Vs_Path_Phase2 ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, dedxHits->phase2cluster(h)->threshold()?1:0);
-    
-//                          if(moduleGeometry>=1 && moduleGeometry<=14){ // FIXME we don't have the geometry information for Pixels yet (TkModGeom* arrays) !!!
-//                             double nx, ny;
-//                             if(moduleGeometry<=4){
-//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-//                                nx = dedxHits->pos(h).x() /  TkModGeomWidthT[moduleGeometry];
-//                             }else{
-//                                double  offset = TkModGeomLength[moduleGeometry] * (TkModGeomWidthT[moduleGeometry]+TkModGeomWidthB[moduleGeometry]) / (TkModGeomWidthT[moduleGeometry]-TkModGeomWidthB[moduleGeometry]);  // check sign if GeomWidthT[moduleGeometry] < TkModGeomWidthB[moduleGeometry] !!! 
-//                                double  tan_a = TkModGeomWidthT[moduleGeometry] / std::abs(offset + TkModGeomLength[moduleGeometry]);
-//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-//                                nx = dedxHits->pos(h).x() / (tan_a*std::abs(dedxHits->pos(h).y()+offset));
-//                             }
-//                             //printf("%i - %f - %f --> %f - %f\n", moduleGeometry, dedxHits->pos(h).x(), dedxHits->pos(h).y(), nx, ny);
-//                             results[R]->Charge_Vs_XYHN[moduleGeometry]->Fill(nx, ny); 
-//                             if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYLN[moduleGeometry]->Fill(nx, ny);
-//                          }
+                         else if(detid.subdetId()>=4) results[R]->Charge_Vs_Path_Phase2 ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, dedxHits->phase2cluster(h)->threshold()>0?1:0);
                       }
                    }
                 }
              }
 
+
+             for (unsigned int R=0; R<results.size();R++)
+             {
+                if (track->pt() < 55 && isSignal) continue;
+                if (track->pt() > 5 && !isSignal) continue;
+                if (results[R]->isDiscrim || results[R]->isEstim){
+                   DeDxData dedxObj   = computedEdx(dedxHits, dEdxSF, results[R]->pixel_dEdxTemplates, results[R]->strip_dEdxTemplates, results[R]->usePixel, false, results[R]->useTrunc, results[R]->useStrip);
+                   results[R]->HdedxVsEtaProfile ->Fill(track->eta(), dedxObj.dEdx() );
+                   results[R]->HdedxVsEta        ->Fill(track->eta(), dedxObj.dEdx() );
+                   results[R]->HdedxVsP          ->Fill(track  ->p(), dedxObj.dEdx() );
+                   results[R]->HdedxMIP          ->Fill( dedxObj.dEdx() );
+                }
+             }
 //              bool isCosmic = isCompatibleWithCosmic(track, vertexColl);
 //              bool lockOnTrack=false;
 //              double dEdxDebug = 0;

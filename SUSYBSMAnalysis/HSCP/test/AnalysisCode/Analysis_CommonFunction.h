@@ -705,7 +705,7 @@ class dedxHIPEmulator{
 
 
 
-TH3F* loadDeDxTemplate(string path, bool splitByModuleType=false);
+TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
 reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
 HitDeDxCollection getHitDeDx(const DeDxHitInfo* dedxHits, double* scaleFactors, std::unordered_map<unsigned int,double>* TrackerGains=NULL, bool correctFEDSat=false, int crossTalkInvAlgo=0);
 
@@ -770,9 +770,9 @@ class dedxGainCorrector{
 
 
 
-TH3F* loadDeDxTemplate(string path, bool splitByModuleType){
+TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
    TFile* InputFile = new TFile(path.c_str());
-   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, "Charge_Vs_Path");
+   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, isPhase2?"Charge_Vs_Path_Phase2":"Charge_Vs_Path");
    if(!DeDxMap_){printf("dEdx templates in file %s can't be open\n", path.c_str()); exit(0);}
 
    TH3F* Prob_ChargePath  = (TH3F*)(DeDxMap_->Clone("Prob_ChargePath")); 

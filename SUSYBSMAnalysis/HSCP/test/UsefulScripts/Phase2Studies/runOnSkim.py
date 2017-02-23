@@ -77,7 +77,7 @@ if sys.argv[1]=='1':
                  InputListCSV+= inFile + ','
               InputListCSV = InputListCSV[:-1] #remove the last duplicated comma
               LaunchOnCondor.SendCluster_Push  (["BASH", "sh " + os.getcwd() + "/DeDxStudy.sh " + InputListCSV + " out.root; mv out.root " + outdir+"dEdxHistos_%i.root" %  LaunchOnCondor.Jobs_Count ])
-#	   LaunchOnCondor.SendCluster_Submit()
+	   LaunchOnCondor.SendCluster_Submit()
 
 elif sys.argv[1]=='2':
         for DATASET in datasetList :#+signalList :
