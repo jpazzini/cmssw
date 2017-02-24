@@ -4,14 +4,14 @@ import string, os, sys
 import SUSYBSMAnalysis.HSCP.LaunchOnCondor as LaunchOnCondor
 
 datasets     = [
-	'/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
-	'/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
-	'/HSCPppstau_M_871_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
-	'/HSCPppstau_M_651_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO'
+   '/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
 ]
 
-outdir       = 'out'
-server       = 'root://cms-xrd-global.cern.ch/'
+outdir          = 'out'
+server          = 'root://cms-xrd-global.cern.ch/'
+storageDir      = "/storage/data/cms/store/user/jozobec/Phase2"
+storageTransfer = True
 
 def outDirName (dataset):
     return dataset.split('/')[1]
@@ -41,6 +41,7 @@ if sys.argv[1] == '1':
 
    for dataset in datasets:
       datasetMark = outDirName (dataset)
+      os.system('mkdir -p %s/%s' % (storageDir, datasetMark))
       print '===========================================================\n%s\n' % datasetMark
       Files = getDatasetFiles(dataset)
       for i in range (0, len(Files)):
@@ -50,7 +51,10 @@ if sys.argv[1] == '1':
          f.write ('process.Out.fileName = cms.untracked.string(\'dEdxSkim_%s_%i.root\')\n' % (datasetMark, i))
          f.write ('process.source.fileNames.extend([\'%s/%s\'])\n' % (server,Files[i]))
          f.close()
-         LaunchOnCondor.Jobs_FinalCmds = ['mv dEdxSkim*.root %s/%s/%s/' % (os.getcwd(), outdir, datasetMark)]
+         if storageTransfer:
+            LaunchOnCondor.Jobs_FinalCmds = ["lcg-cp -v -n 10 -D srmv2 -b file://${PWD}/dEdxSkim_%s_%i.root srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2\?SFN=%s/%s/dEdxSkim_%s_%i.root && rm -f dEdxSkim_%s_i%.root" % (datasetMark, i, storageDir, datasetMark, datasetMark, i, datasetMark, i)] # if you do not use zsh, change '\?' to '?'
+         else:
+            LaunchOnCondor.Jobs_FinalCmds = ['mv dEdxSkim*.root %s/%s/%s/' % (os.getcwd(), outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
          os.system ('rm -f dEdxSkimmer_cff.py')
    LaunchOnCondor.SendCluster_Submit ()

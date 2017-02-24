@@ -31,8 +31,8 @@ if len(sys.argv)==1:
 
 
 datasetList = [
-  ["MCMinBias_140PU", "/nfs/scratch/fynu/jzobec/Run2Analysis/HL.LHC.Study/CMSSW_8_2_0_patch1/src/SUSYBSMAnalysis/HSCP/test/UsefulScripts/Phase2Studies/out/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
-  ["MCMinBias_200PU", "/nfs/scratch/fynu/jzobec/Run2Analysis/HL.LHC.Study/CMSSW_8_2_0_patch1/src/SUSYBSMAnalysis/HSCP/test/UsefulScripts/Phase2Studies/out/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/"],
+  ["MCMinBias_140PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
+  ["MCMinBias_200PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/"],
 ]
 
 isLocal = False  #allow to access data in Louvain from remote sites
