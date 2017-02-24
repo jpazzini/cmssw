@@ -63,6 +63,8 @@ bool isCompatibleWithCosmic (const reco::TrackRef& track, const std::vector<reco
 double GetMass (double P, double I, double K, double C);
 TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
 reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
+char* getProgressBar (double percentage, unsigned int barLength=100);
+void printProgressBar (const char* bar, const char* prefix=NULL);
 
 
 const double P_Min               = 1   ;
@@ -254,9 +256,9 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    }
 
    double dEdxSF [2];
-   bool SuppressFakeHIP = false;
        dEdxSF [0]      = 1.09711;
        dEdxSF [1]      = 1.09256;
+   bool SuppressFakeHIP = false;
 
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
 
@@ -273,10 +275,21 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
      TFile* file = TFile::Open(FileName[f].c_str() );
      if (!file) continue;
      if (file->IsZombie()) continue;
+
+     char prefix [50]; sprintf (prefix, "Processing file %u/%lu: ", f, FileName.size());
+     char* bar = NULL;
+     double percentageOld = -1.0;
+     size_t iev = 0;
      fwlite::Event ev(file);
      // EVENT LOOP
      for(ev.toBegin(); !ev.atEnd(); ++ev){
-
+         double percentage = (iev*1.0)/ev.size();
+         if (percentage != percentageOld){
+            percentageOld = percentage;
+            if (bar) delete [] bar;
+            bar = getProgressBar (percentage, 60);
+            printProgressBar (bar, prefix);
+         }
          fwlite::Handle<DeDxHitInfoAss> dedxCollH;
          dedxCollH.getByLabel(ev, "dedxHitInfo");
          if(!dedxCollH.isValid()){printf("Invalid dedxCollH\n");continue;}
@@ -587,6 +600,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 //                 }
 //              }
          } // END TRACK LOOP
+         iev++;
       } // END EVENT LOOP
       printf("\n");
       delete file;
@@ -762,3 +776,27 @@ TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
    InputFile->Close();
    return Prob_ChargePath;
 }
+
+char* getProgressBar (double percentage, unsigned int barLength)
+{
+   char* bar = new char [barLength+8];
+   sprintf (bar, "[");
+   unsigned int i = 0;
+   for (; i < (unsigned int) (percentage*barLength); i++)
+      sprintf (bar, "%s=", bar);
+   sprintf (bar, "%s%c", bar, percentage<0.99?'>':'=');
+   for (; i < barLength-1; i++)
+      sprintf (bar, "%s ", bar);
+   sprintf (bar, "%s] %u %% ", bar, (unsigned int) (100*percentage));
+   return bar;
+}
+
+void printProgressBar (const char* bar, const char* prefix)
+{
+   if (prefix)
+      fprintf (stdout, "\r%s%s", prefix, bar);
+   else
+      fprintf (stdout, "\r%s", bar);
+   fflush (stdout);
+}
+
