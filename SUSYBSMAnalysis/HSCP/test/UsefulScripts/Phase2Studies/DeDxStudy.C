@@ -299,13 +299,11 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
 
          fwlite::Handle< std::vector<reco::GenParticle> > genCollHandle;
-         if(isSignal){
-            //get the collection of generated Particles
-            genCollHandle.getByLabel(ev, "genParticlesSkimmed");
-            if(!genCollHandle.isValid()){
-               genCollHandle.getByLabel(ev, "genParticles");
-               if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
-            }
+         //get the collection of generated Particles
+         genCollHandle.getByLabel(ev, "genParticlesSkimmed");
+         if(!genCollHandle.isValid()){
+            genCollHandle.getByLabel(ev, "genParticles");
+            if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
          }
 
          // TEST TRACK LOOP
@@ -484,15 +482,17 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       unsigned char PSHits = 0, PHits = 0;
                       for (unsigned int h=0;h<dedxHits->size();h++){
                          DetId detId (dedxHits->detId(h));
+                         int disk, ring;
                          switch (dedxHits->detId(h).subdetId())
                          {
                             // pixel
                             case 1: case 2: PHits++;                              break;
                             // strip barrel
-                            case 4: if ((int) (detId >> 20 & 0xF) =< 3) PSHits++; break;
+                            case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
                             // strip endcap
-                            case 5: int disk = (int) (detId >> 18 & 0xF),
-                                        ring = (int) (detId >> 12 & 0x3F);
+                            case 4:
+                                    disk = (int) (detId >> 18 & 0xF);
+                                    ring = (int) (detId >> 12 & 0x3F);
                                     switch (disk){
                                        case 1: case 2:         if (ring <= 9) PSHits++; break;
                                        case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
