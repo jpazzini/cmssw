@@ -23,7 +23,6 @@
 #include "TProfile.h"
 #include "TPaveText.h"
 
-
 namespace reco    { class Vertex; class Track; class GenParticle; class DeDxData; class MuonTimeExtra;}
 namespace susybsm { class HSCParticle;}
 namespace fwlite  { class ChainEvent;}
@@ -38,8 +37,10 @@ namespace edm     {class TriggerResults; class TriggerResultsByName; class Input
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
+#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 
 using namespace fwlite;
 using namespace reco;
@@ -51,10 +52,8 @@ using namespace trigger;
 
 //#include "../../AnalysisCode_NewSyst_Hybr_WOverflow/Analysis_Step1_EventLoop.C"
 //#include "../../AnalysisCode/Analysis_Step1_EventLoop.C"
-#include "../../AnalysisCode/tdrstyle.C"
-#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 #include "../../AnalysisCode/Analysis_CommonFunction.h"
-
+#include "../../AnalysisCode/tdrstyle.C"
 
 #endif
 
@@ -62,11 +61,13 @@ using namespace trigger;
 double DistToHSCP (const reco::TrackRef& track, const std::vector<reco::GenParticle>& genColl);
 bool isCompatibleWithCosmic (const reco::TrackRef& track, const std::vector<reco::Vertex>& vertexColl);
 double GetMass (double P, double I, double K, double C);
+TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
+reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
 
 
 const double P_Min               = 1   ;
-const double P_Max               = 16  ; // 1 + 14 + 1; final one is for pixel!
-const int    P_NBins             = 15  ; // 15th bin = pixel; 0 is underflow
+const double P_Max               = 2  ; // 1 + 14 + 1; final one is for pixel!
+const int    P_NBins             = 1  ; // 15th bin = pixel; 0 is underflow
 const double Path_Min            = 0.2 ;
 const double Path_Max            = 1.6 ;
 const int    Path_NBins          = 42  ;
@@ -128,22 +129,12 @@ struct dEdxStudyObj
    bool usePixel;
    bool useStrip;
 
-   bool mustBeInside;
    bool removeCosmics;
-   bool correctFEDSat;
-   bool useClusterCleaning;
-   bool fakeHIP;
 
-   double dropLowerDeDxValue;
-   bool trimPixel;
-
-   double Kconst;
-   double Cconst;
-
-   int crossTalkInvAlgo; // 0  -- do not use crossTalkInversion
-                         // 1  -- use existing algorithm developed by Claude
 
    TH3D* Charge_Vs_Path;
+   TH3D* Charge_Vs_Path_Phase2;
+   TH3D* HdedxVsNOMCalib;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
    TH2D* HdedxVsPSyst;
@@ -166,17 +157,13 @@ struct dEdxStudyObj
    TProfile* HHitProfile_U; 
    TH1D* HProtonHitSO; 
    TH1D* HProtonHitPO; 
-   TProfile* Charge_Vs_FS[16];
-   TH2D* Charge_Vs_XYH[16];
-   TH2D* Charge_Vs_XYL[16];
-   TH2D* Charge_Vs_XYHN[16];
-   TH2D* Charge_Vs_XYLN[16];
 
 
-   TH3F* dEdxTemplates = NULL;
+   TH3F* pixel_dEdxTemplates = NULL;
+   TH3F* strip_dEdxTemplates = NULL;
    std::unordered_map<unsigned int,double>* TrackerGains = NULL;
 
-   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* dEdxTemplates_=NULL, double K_=2.7, double C_=3.2, std::unordered_map<unsigned int,double>* TrackerGains_=NULL, bool mustBeInside_=false, bool removeCosmics_=false, bool correctFEDSat_=false, int useClusterCleaning_=0, int crossTalkInvAlgo_=0, double dropLowerDeDxValue_ = 0, bool trimPixel_ = false, bool fakeHIP_=true){
+   dEdxStudyObj(string Name_, int type_, int subdet_, TH3F* pixel_dEdxTemplates_=NULL, TH3F* strip_dEdxTemplates_=NULL, bool removeCosmics_=true){
       Name = Name_;
 
       if     (type_==0){ isHit=true;  isEstim= false; isDiscrim = false; useTrunc = false;} // hit level only
@@ -189,19 +176,9 @@ struct dEdxStudyObj
       else if(subdet_==2){ usePixel = false; useStrip = true; }
       else               { usePixel = true;  useStrip = true; }
 
-      dEdxTemplates      = dEdxTemplates_;
-      TrackerGains       = TrackerGains_;
-      mustBeInside       = mustBeInside_;
-      removeCosmics      = removeCosmics_; 
-      correctFEDSat      = correctFEDSat_;
-      useClusterCleaning = static_cast<bool> (useClusterCleaning_);
-      crossTalkInvAlgo   = crossTalkInvAlgo_;
-      dropLowerDeDxValue = dropLowerDeDxValue_;
-      trimPixel          = trimPixel_;
-      fakeHIP            = fakeHIP_;
-
-      Kconst = K_;
-      Cconst = C_;
+      pixel_dEdxTemplates = pixel_dEdxTemplates_;
+      strip_dEdxTemplates = strip_dEdxTemplates_;
+      removeCosmics       = removeCosmics_; 
 
       string HistoName;
       //HitLevel plot      
@@ -210,20 +187,14 @@ struct dEdxStudyObj
          HistoName = Name + "_HitProfile";        HHitProfile           = new TProfile(  HistoName.c_str(), HistoName.c_str(),  50, 0, 100); 
          HistoName = Name + "_HitProfile_U";      HHitProfile_U         = new TProfile(  HistoName.c_str(), HistoName.c_str(),  50, 0, 100);
          if(usePixel && useStrip){ 
-            HistoName = Name + "_ChargeVsPath";      Charge_Vs_Path        = new TH3D(      HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, Charge_NBins, Charge_Min, Charge_Max);
-            for(unsigned int g=0;g<16;g++){
-               char Id[255]; sprintf(Id, "%02i", g);
-               HistoName = Name + "_ChargeVsFS"+Id;       Charge_Vs_FS[g]       = new TProfile  ( HistoName.c_str(), HistoName.c_str(),  769, 0, 769);
-               HistoName = Name + "_ChargeVsXYH"+Id;      Charge_Vs_XYH[g]      = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -15, 15, 250, -15, 15);
-               HistoName = Name + "_ChargeVsXYL"+Id;      Charge_Vs_XYL[g]      = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -15, 15, 250, -15, 15);
-               HistoName = Name + "_ChargeVsXYHN"+Id;     Charge_Vs_XYHN[g]     = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -1.5, 1.5, 250, -1.5, 1.5);
-               HistoName = Name + "_ChargeVsXYLN"+Id;     Charge_Vs_XYLN[g]     = new TH2D      ( HistoName.c_str(), HistoName.c_str(),  250, -1.5, 1.5, 250, -1.5, 1.5);
-            }
+            HistoName = Name + "_ChargeVsPath";        Charge_Vs_Path        = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, Charge_NBins, Charge_Min, Charge_Max);
+            HistoName = Name + "_ChargeVsPath_Phase2"; Charge_Vs_Path_Phase2 = new TH3D( HistoName.c_str(), HistoName.c_str(), P_NBins, P_Min, P_Max, Path_NBins, Path_Min, Path_Max, 2, 0, 2);
          }
       }
 
       //Track Level plots
       if(isEstim || isDiscrim){
+         HistoName = Name + "_dedxVsNOMCalib";    HdedxVsNOMCalib       = new TH3D(      HistoName.c_str(), HistoName.c_str(), 12, 0, 12, 12, 0, 12, 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_MIP";               HdedxMIP              = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_dedxVsP";           HdedxVsP              = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_dedxVsPSyst";       HdedxVsPSyst          = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
@@ -266,8 +237,12 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    gStyle->SetNdivisions(505,"X");
    TH1::AddDirectory(kTRUE);
 
-   TH3F* dEdxTemplates      = NULL;
-   bool isSignal            = true;
+
+   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140.root", false, true);
+   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140_Phase2.root", true, true);
+   bool isSignal                  = false;
+   if (INPUT.find("uino")!=std::string::npos
+    || INPUT.find("stau")!=std::string::npos) isSignal = true;
 
    if (INPUT.find("MinBias")<std::string::npos) isSignal = false;
 
@@ -288,15 +263,18 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
 
    std::vector<dEdxStudyObj*> results;
-   results.push_back(new dEdxStudyObj("hit_PO"           , 0, 1, NULL, 2.7, 3.2, NULL, false, false, false, 1, 1) );
-   results.push_back(new dEdxStudyObj("hit_SO_in_noC_CCC", 0, 2, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
-   results.push_back(new dEdxStudyObj("hit_SP_in_noC_CCC", 0, 3, NULL, 2.7, 3.2, NULL,  true,  true, false, 1, 1) );
+   results.push_back ( new dEdxStudyObj ("hit_PO", 0, 1, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("hit_SO", 0, 2, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("hit_SP", 0, 3, NULL, NULL,  true) );
+   results.push_back ( new dEdxStudyObj ("Ias_SP", 2, 3, pixel_dEdxTemplates, strip_dEdxTemplates,  true) );
 
-    perTrackHistos hists;
+   perTrackHistos hists;
    
    // FILE LOOP
    for(unsigned int f=0;f<FileName.size();f++){
      TFile* file = TFile::Open(FileName[f].c_str() );
+     if (!file) continue;
+     if (file->IsZombie()) continue;
      fwlite::Event ev(file);
      // EVENT LOOP
      for(ev.toBegin(); !ev.atEnd(); ++ev){
@@ -323,22 +301,19 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
 
          fwlite::Handle< std::vector<reco::GenParticle> > genCollHandle;
-         if(isSignal){
-            //get the collection of generated Particles
-            genCollHandle.getByLabel(ev, "genParticlesSkimmed");
-            if(!genCollHandle.isValid()){
-               genCollHandle.getByLabel(ev, "genParticles");
-               if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
-            }
+         //get the collection of generated Particles
+         genCollHandle.getByLabel(ev, "genParticlesSkimmed");
+         if(!genCollHandle.isValid()){
+            genCollHandle.getByLabel(ev, "genParticles");
+            if(!genCollHandle.isValid()){printf("GenParticle Collection NotFound\n");continue;}
          }
 
-         std::cerr << "Event contains " << trackCollHandle->size() << " tracks." << std::endl;
          // TEST TRACK LOOP
          for(unsigned int c=0;c<trackCollHandle->size();c++){
             reco::TrackRef track = reco::TrackRef( trackCollHandle.product(), c );
             if(track.isNull())continue;
             if(fabs(track->eta())>4)continue; // should be useless
-            if(track->pt()<55)continue; // might be a quite tight cut
+            if(track->pt()<55 && isSignal)continue; // might be a quite tight cut
             if( (fabs(track->dz(vertexColl[0].position())) > 0.5) || (fabs(track->dxy(vertexColl[0].position())) > 0.5) ) continue; // possibly related to cosmics more than tracks
             if(track->ptError()>0.25*track->pt()) continue;        
             if(track->chi2()/track->ndof()>5 )continue;
@@ -397,9 +372,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                 if ( it.threshold() > 0 ) ++phase2sHoT;
             }
 
-            fprintf (stderr, "Track %d: %lu/%lu hits: %lu P, %lu S, %lu P2\n", c, dedxHits->size(), track->recHitsSize(),
-                    pixels.size(), strips.size(), phase2s.size());
-
             hists.chi2->Fill(track->chi2()/track->ndof());
             
             hists.dEdXHits->Fill(dedxHits->size());
@@ -437,13 +409,13 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->chi2()/track->ndof()>5 )continue;
             if(track->found()<8)continue;
 
-//             if(isSignal){
-//                if(track->pt()<45)continue;
-//                const std::vector<reco::GenParticle>& genColl = *genCollHandle;
-//                if (DistToHSCP (track, genColl)>0.03) continue;
-//             }else{
-//                if(track->pt()>=45)continue;
-//             }
+             if(isSignal){
+                if(track->pt()<45)continue;
+                const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+                if (DistToHSCP (track, genColl)>0.03) continue;
+             }else{
+                if(track->pt()>=45)continue;
+             }
 
             //load dEdx information
             const DeDxHitInfo* dedxHits = NULL;
@@ -455,9 +427,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->pt() > 5){
                for(unsigned int h=0;h<dedxHits->size();h++){
                    DetId detid(dedxHits->detId(h));
-                   int moduleGeometry = 0; // underflow bin -- debug purposes
-                   if(detid.subdetId()>=3){ SiStripDetId SSdetId(detid); moduleGeometry = SSdetId.moduleGeometry(); if (moduleGeometry==15) {cerr << "ERROR! There is no SiStrip geometry 15!" << endl; exit (EXIT_FAILURE);}}
-                   else if(detid.subdetId()<3){moduleGeometry = 15;} // 15 is for pixel
+                   int moduleGeometry = 1; // underflow bin -- debug purposes
 
                    for(unsigned int R=0;R<results.size();R++){
 //                      if (results[R]->Name.find("newCCC")!=string::npos){dEdxSF[0] = dEdxSF_NewCC[0]; dEdxSF[1] = dEdxSF_NewCC[1];}
@@ -470,11 +440,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       if(!results[R]->isHit) continue; //only consider results related to hit info here
                       if(!results[R]->usePixel && detid.subdetId() <3)continue; // skip pixels
                       if(!results[R]->useStrip && detid.subdetId()>=3)continue; // skip strips
-// // //                       if(results[R]->mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->phase2cluster(h):NULL) )continue; /// NOTE -> JACOPO
                       if(results[R]->removeCosmics){ if (isCompatibleWithCosmic(track, vertexColl))continue;} //don't consider hits, which belong to cosmic tracks
 
-// // //                       if(results[R]->useClusterCleaning && detid.subdetId()>=3 && !clusterCleaning(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo)) continue; //if it fails clusterCleaning, skip it! /// NOTE -> JACOPO
-//                      if(results[R]->CCFunction && detid.subdetId()>=3 && !results[R]->CCFunction(dedxHits->phase2cluster(h), results[R]->crossTalkInvAlgo, NULL)) continue; //if it fails clusterCleaning, skip it!
 
                       int charge = dedxHits->charge(h);
                       double ChargeOverPathlength   = 0.;
@@ -495,31 +462,57 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
                       if(results[R]->usePixel && results[R]->useStrip){
                          
-                         results[R]->Charge_Vs_Path->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*(detid.subdetId()<3?265:1))); 
-                         if(detid.subdetId()>=3)results[R]->Charge_Vs_FS[moduleGeometry]->Fill(dedxHits->phase2cluster(h)->firstStrip(), charge); 
-                         results[R]->Charge_Vs_XYH[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
-                         if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYL[moduleGeometry]->Fill(dedxHits->pos(h).x(), dedxHits->pos(h).y()); 
-    
-//                          if(moduleGeometry>=1 && moduleGeometry<=14){ // FIXME we don't have the geometry information for Pixels yet (TkModGeom* arrays) !!!
-//                             double nx, ny;
-//                             if(moduleGeometry<=4){
-//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-//                                nx = dedxHits->pos(h).x() /  TkModGeomWidthT[moduleGeometry];
-//                             }else{
-//                                double  offset = TkModGeomLength[moduleGeometry] * (TkModGeomWidthT[moduleGeometry]+TkModGeomWidthB[moduleGeometry]) / (TkModGeomWidthT[moduleGeometry]-TkModGeomWidthB[moduleGeometry]);  // check sign if GeomWidthT[moduleGeometry] < TkModGeomWidthB[moduleGeometry] !!! 
-//                                double  tan_a = TkModGeomWidthT[moduleGeometry] / std::abs(offset + TkModGeomLength[moduleGeometry]);
-//                                ny = dedxHits->pos(h).y() /  TkModGeomLength[moduleGeometry];
-//                                nx = dedxHits->pos(h).x() / (tan_a*std::abs(dedxHits->pos(h).y()+offset));
-//                             }
-//                             //printf("%i - %f - %f --> %f - %f\n", moduleGeometry, dedxHits->pos(h).x(), dedxHits->pos(h).y(), nx, ny);
-//                             results[R]->Charge_Vs_XYHN[moduleGeometry]->Fill(nx, ny); 
-//                             if(ChargeOverPathlength<1.6)results[R]->Charge_Vs_XYLN[moduleGeometry]->Fill(nx, ny);
-//                          }
+                         if     (detid.subdetId() < 3)results[R]->Charge_Vs_Path        ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*265)); 
+                         else if(detid.subdetId()>=4) results[R]->Charge_Vs_Path_Phase2 ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, dedxHits->phase2cluster(h)->threshold()>0?1:0);
                       }
                    }
                 }
              }
 
+
+             for (unsigned int R=0; R<results.size();R++)
+             {
+                if (track->pt() < 55 && isSignal) continue;
+                if (track->pt() > 5 && !isSignal) continue;
+                if (results[R]->isDiscrim || results[R]->isEstim){
+                   DeDxData dedxObj   = computedEdx(dedxHits, dEdxSF, results[R]->pixel_dEdxTemplates, results[R]->strip_dEdxTemplates, results[R]->usePixel, false, results[R]->useTrunc, results[R]->useStrip);
+                   results[R]->HdedxVsEtaProfile ->Fill(track->eta(), dedxObj.dEdx() );
+                   results[R]->HdedxVsEta        ->Fill(track->eta(), dedxObj.dEdx() );
+                   results[R]->HdedxVsP          ->Fill(track  ->p(), dedxObj.dEdx() );
+                   results[R]->HdedxMIP          ->Fill(dedxObj.dEdx());
+                   // number of Pixel Hits, PS hits and the dEdx -- in the end we select the one with best resolution
+                   if (track->pt() > 5){
+                      unsigned char PSHits = 0, PHits = 0;
+                      for (unsigned int h=0;h<dedxHits->size();h++){
+                         DetId detId (dedxHits->detId(h));
+                         int disk, ring;
+                         switch (dedxHits->detId(h).subdetId())
+                         {
+                            // pixel
+                            case 1: case 2: PHits++;                              break;
+                            // strip barrel
+                            case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
+                            // strip endcap
+                            case 4:
+                                    disk = (int) (detId >> 18 & 0xF);
+                                    ring = (int) (detId >> 12 & 0x3F);
+                                    switch (disk){
+                                       case 1: case 2:         if (ring <= 9) PSHits++; break;
+                                       case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
+                                       default:
+                                                std::cerr << "Uknown disk!" << std::endl;
+                                    }
+                    
+                                    break;
+                            default:
+                                    std::cerr << "Not a tracker detId!" << std::endl;
+                                    exit (EXIT_FAILURE);
+                         }
+                      }
+                      results[R]->HdedxVsNOMCalib ->Fill(PHits, PSHits, dedxObj.dEdx());
+                   }
+                }
+             }
 //              bool isCosmic = isCompatibleWithCosmic(track, vertexColl);
 //              bool lockOnTrack=false;
 //              double dEdxDebug = 0;
@@ -633,3 +626,142 @@ double GetMass (double P, double I, double K, double C){
    return sqrt((I-C)/K)*P;
 }
 
+DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* pixel_TemplateHisto, TH3* strip_TemplateHisto, bool usePixel, bool reverseProb, bool useTruncated, bool useStrip){
+     if(!dedxHits) return DeDxData(-1, -1, -1);
+//     if(templateHisto)usePixel=false; //never use pixel for discriminator
+
+     std::vector<double> vect;
+     std::vector<double> vectStrip;
+     std::vector<double> vectPixel;
+
+     unsigned int NSat=0;
+     for(unsigned int h=0;h<dedxHits->size();h++){
+        DetId detid(dedxHits->detId(h));  
+        if(!usePixel && detid.subdetId()<3)continue; // skip pixels
+        if(!useStrip && detid.subdetId()>=4)continue; // skip strips        
+        TH3* templateHisto = detid.subdetId()<3?pixel_TemplateHisto:strip_TemplateHisto;
+         //printStripCluster(stdout, dedxHits->stripCluster(h), dedxHits->detId(h));
+
+        int ClusterCharge = detid.subdetId()<3?dedxHits->charge(h):dedxHits->phase2cluster(h)->threshold();
+        int HoT = dedxHits->phase2cluster(h)->threshold()>0?1:0;
+
+        if(detid.subdetId()>=4){//for strip only
+           const Phase2TrackerCluster1D* cluster = dedxHits->phase2cluster(h);
+           int firstStrip = cluster->firstStrip();
+           int prevAPV = -1;
+           double gain = 1.0;
+        }
+
+        double scaleFactor = scaleFactors[0];
+        if (detid.subdetId()<3) scaleFactor *= scaleFactors[1]; // add pixel scaling
+
+        if(templateHisto){  //save discriminator probability
+           double ChargeOverPathlength = ClusterCharge*(detid.subdetId()<3?(scaleFactor/(dedxHits->pathlength(h)*10.0*265)):1);
+
+           int moduleGeometry = 1; // underflow for debug
+           int    BinX   = templateHisto->GetXaxis()->FindBin(moduleGeometry);
+           int    BinY   = templateHisto->GetYaxis()->FindBin(dedxHits->pathlength(h)*10.0); //*10 because of cm-->mm
+           int    BinZ   = templateHisto->GetZaxis()->FindBin(ChargeOverPathlength);
+           double Prob   = templateHisto->GetBinContent(BinX,BinY,BinZ);
+           //printf("%i %i %i  %f\n", BinX, BinY, BinZ, Prob);
+           if(reverseProb)Prob = 1.0 - Prob;
+           vect.push_back(Prob); //save probability
+        }else{
+           double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
+           double ChargeOverPathlength = ClusterCharge*scaleFactor*3.61e-6/dedxHits->pathlength(h);
+
+           if(detid.subdetId()< 3){
+              vect.push_back(ChargeOverPathlength); //save charge, but skip phase2 strips
+              vectPixel.push_back(ChargeOverPathlength);
+           }
+           if(detid.subdetId()>=4)vectStrip.push_back(ChargeOverPathlength);
+//           printf("%i - %f / %f = %f\n", h, scaleFactor*Norm*dedxHits->charge(h), dedxHits->pathlength(h), ChargeOverPathlength);
+        }
+     }
+
+     double result;
+     int size = vect.size();
+
+     if(size>0){
+        if(pixel_TemplateHisto && strip_TemplateHisto){  //dEdx discriminator
+           //Prod discriminator
+           //result = 1;
+           //for(int i=0;i<size;i++){
+           //   if(vect[i]<=0.0001){result *= pow(0.0001 , 1.0/size);}
+           //   else               {result *= pow(vect[i], 1.0/size);}
+           //}
+
+           //Ias discriminator
+           result = 1.0/(12*size);
+           std::sort(vect.begin(), vect.end(), std::less<double>() );
+           for(int i=1;i<=size;i++){
+              result += vect[i-1] * pow(vect[i-1] - ((2.0*i-1.0)/(2.0*size)),2);
+           }
+           result *= (3.0/size);
+        }else{  //dEdx estimator
+           if(useTruncated){
+              //truncated40 estimator
+              std::sort(vect.begin(), vect.end(), std::less<double>() );              
+              result=0;
+              int nTrunc = size*0.40;
+              for(int i = 0; i+nTrunc<size; i ++){
+                 result+=vect[i];
+              }
+              result /= (size-nTrunc);
+           }else{
+              //harmonic2 estimator           
+              result=0;
+              double expo = -2;
+              for(int i = 0; i< size; i ++){
+                 result+=pow(vect[i],expo);
+              }
+              result = pow(result/size,1./expo);
+           }
+//           printf("Ih = %f\n------------------\n",result);
+        }
+     }else{
+        result = -1;
+     }
+     return DeDxData(result, NSat, size);
+}
+
+TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
+   TFile* InputFile = new TFile(path.c_str());
+   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, isPhase2?"Charge_Vs_Path_Phase2":"Charge_Vs_Path");
+   if(!DeDxMap_){
+      printf("dEdx templates in file %s can't be open!\nRetrying ...\n", path.c_str());
+      DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, isPhase2?"Charge_Vs_Path":"Charge_Vs_Path_Phase2");
+      if(!DeDxMap_){
+         printf ("Attempt unsuccessful. Giving up.\n");
+         exit (EXIT_FAILURE);
+      }
+   }
+
+   TH3F* Prob_ChargePath  = (TH3F*)(DeDxMap_->Clone("Prob_ChargePath")); 
+   Prob_ChargePath->Reset();
+   Prob_ChargePath->SetDirectory(0); 
+
+   if(!splitByModuleType){
+      Prob_ChargePath->RebinX(Prob_ChargePath->GetNbinsX()/*-1*/); // <-- do not include pixel in the inclusive // pixel is in a separate templatea now
+   }
+
+   for(int i=0;i<=Prob_ChargePath->GetXaxis()->GetNbins()+1;i++){
+      for(int j=0;j<=Prob_ChargePath->GetYaxis()->GetNbins()+1;j++){
+         double Ni = 0;
+         for(int k=0;k<=Prob_ChargePath->GetZaxis()->GetNbins()+1;k++){Ni+=DeDxMap_->GetBinContent(i,j,k);}
+
+         for(int k=0;k<=Prob_ChargePath->GetZaxis()->GetNbins()+1;k++){
+            double tmp = 0;
+            for(int l=0;l<=k;l++){ tmp+=DeDxMap_->GetBinContent(i,j,l);}
+
+            if(Ni>0){
+               Prob_ChargePath->SetBinContent (i, j, k, tmp/Ni);
+            }else{
+               Prob_ChargePath->SetBinContent (i, j, k, 0);
+            }
+         }
+      }
+   }
+   InputFile->Close();
+   return Prob_ChargePath;
+}

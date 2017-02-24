@@ -705,8 +705,8 @@ class dedxHIPEmulator{
 
 
 
-TH3F* loadDeDxTemplate(string path, bool splitByModuleType=false);
-reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, bool usePixel=false, bool useClusterCleaning=true, bool reverseProb=false, bool useTruncated=false, std::unordered_map<unsigned int,double>* TrackerGains=NULL, bool useStrip=true, bool mustBeInside=false, size_t MaxStripNOM=999, bool correctFEDSat=false, int crossTalkInvAlgo=0, double dropLowerDeDxValue=0.0, dedxHIPEmulator* hipEmulator=NULL);
+TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
+reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
 HitDeDxCollection getHitDeDx(const DeDxHitInfo* dedxHits, double* scaleFactors, std::unordered_map<unsigned int,double>* TrackerGains=NULL, bool correctFEDSat=false, int crossTalkInvAlgo=0);
 
 bool clusterCleaning(const SiStripCluster*   cluster,  int crosstalkInv=0, uint8_t* exitCode=NULL);
@@ -770,9 +770,9 @@ class dedxGainCorrector{
 
 
 
-TH3F* loadDeDxTemplate(string path, bool splitByModuleType){
+TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
    TFile* InputFile = new TFile(path.c_str());
-   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, "Charge_Vs_Path");
+   TH3F* DeDxMap_ = (TH3F*)GetObjectFromPath(InputFile, isPhase2?"Charge_Vs_Path_Phase2":"Charge_Vs_Path");
    if(!DeDxMap_){printf("dEdx templates in file %s can't be open\n", path.c_str()); exit(0);}
 
    TH3F* Prob_ChargePath  = (TH3F*)(DeDxMap_->Clone("Prob_ChargePath")); 
@@ -908,7 +908,7 @@ HitDeDxCollection getHitDeDx(const DeDxHitInfo* dedxHits, double* scaleFactors, 
 
 
 
-DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto, bool usePixel, bool useClusterCleaning, bool reverseProb, bool useTruncated, std::unordered_map<unsigned int,double>* TrackerGains, bool useStrip, bool mustBeInside, size_t MaxStripNOM, bool correctFEDSat, int crossTalkInvAlgo, double dropLowerDeDxValue, dedxHIPEmulator* hipEmulator){
+DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* pixel_TemplateHisto, TH3* strip_TemplateHisto, bool usePixel, bool reverseProb, bool useTruncated, bool useStrip){
      if(!dedxHits) return DeDxData(-1, -1, -1);
 //     if(templateHisto)usePixel=false; //never use pixel for discriminator
 
@@ -917,63 +917,30 @@ DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* tem
      std::vector<double> vectPixel;
 
      unsigned int NSat=0;
-     unsigned int SiStripNOM = 0;
-     double lowerStripDeDx=1000;
-     int lowerStripDeDxIndex=-1;
      for(unsigned int h=0;h<dedxHits->size();h++){
         DetId detid(dedxHits->detId(h));  
         if(!usePixel && detid.subdetId()<3)continue; // skip pixels
-        if(!useStrip && detid.subdetId()>=3)continue; // skip strips        
-        if(useClusterCleaning && !clusterCleaning(dedxHits->stripCluster(h), crossTalkInvAlgo))continue;
+        if(!useStrip && detid.subdetId()>=4)continue; // skip strips        
+        TH3* templateHisto = detid.subdetId()<3?pixel_TemplateHisto:strip_TemplateHisto;
          //printStripCluster(stdout, dedxHits->stripCluster(h), dedxHits->detId(h));
 
-        if(mustBeInside && !isHitInsideTkModule(dedxHits->pos(h), detid, detid.subdetId()>=3?dedxHits->stripCluster(h):NULL))continue;
-        if(detid.subdetId()>=3 && ++SiStripNOM > MaxStripNOM) continue; // skip remaining strips, but not pixel
+        int ClusterCharge = detid.subdetId()<3?dedxHits->charge(h):dedxHits->phase2cluster(h)->threshold();
+        int HoT = dedxHits->phase2cluster(h)->threshold()>0?1:0;
 
-        int ClusterCharge = dedxHits->charge(h);
-
-        if(detid.subdetId()>=3){//for strip only
-           const SiStripCluster* cluster = dedxHits->stripCluster(h);
-           vector<int> amplitudes = convert(cluster->amplitudes());
-           if (crossTalkInvAlgo) amplitudes = CrossTalkInv(amplitudes, 0.10, 0.04, true);
+        if(detid.subdetId()>=4){//for strip only
+           const Phase2TrackerCluster1D* cluster = dedxHits->phase2cluster(h);
            int firstStrip = cluster->firstStrip();
            int prevAPV = -1;
            double gain = 1.0;
-
-           bool isSatCluster = false;
-           ClusterCharge = 0;
-           for(unsigned int s=0;s<amplitudes.size();s++){
-              if(TrackerGains!=NULL){ //don't reload the gain if unnecessary  since map access are slow
-                 int APV = (firstStrip+s)/128;
-                 if(APV != prevAPV){gain = TrackerGains->at(detid.rawId()<<3 |APV); prevAPV=APV; }
-              }
-
-              int StripCharge =  amplitudes[s];
-              if(StripCharge<254){
-                 StripCharge=(int)(StripCharge/gain);
-                 if(StripCharge>=1024){         StripCharge = 255;
-                 }else if(StripCharge>=254){    StripCharge = 254;
-                 }
-              }
-
-              if(StripCharge>=254){isSatCluster=true;}
-              if(StripCharge>=255 && correctFEDSat){StripCharge=512;}
-              ClusterCharge += StripCharge;
-            } 
-            if(isSatCluster)NSat++;
         }
 
         double scaleFactor = scaleFactors[0];
         if (detid.subdetId()<3) scaleFactor *= scaleFactors[1]; // add pixel scaling
 
         if(templateHisto){  //save discriminator probability
-           double ChargeOverPathlength = scaleFactor*ClusterCharge/(dedxHits->pathlength(h)*10.0*(detid.subdetId()<3?265:1));
-//           if(fakeHIP && detid.subdetId()>=3 && rand()%1000<35)ChargeOverPathlength = ( 0.5 + ((rand()%15000)/10000.0) ) / (3.61e-06*265*10);
-//           if(fakeHIP && detid.subdetId() <3 && rand()%1000<20)ChargeOverPathlength = ( 0.3 + ((rand()%12000)/10000.0) ) / (3.61e-06*265*10*265);
+           double ChargeOverPathlength = ClusterCharge*(detid.subdetId()<3?(scaleFactor/(dedxHits->pathlength(h)*10.0*265)):1);
 
-           int moduleGeometry = 0; // underflow for debug
-           if (detid.subdetId()<3) moduleGeometry = 15; // 15 == pixel
-           else {SiStripDetId SSdetId(detid); moduleGeometry = SSdetId.moduleGeometry();}
+           int moduleGeometry = 1; // underflow for debug
            int    BinX   = templateHisto->GetXaxis()->FindBin(moduleGeometry);
            int    BinY   = templateHisto->GetYaxis()->FindBin(dedxHits->pathlength(h)*10.0); //*10 because of cm-->mm
            int    BinZ   = templateHisto->GetZaxis()->FindBin(ChargeOverPathlength);
@@ -983,30 +950,22 @@ DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* tem
            vect.push_back(Prob); //save probability
         }else{
            double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
-           double ChargeOverPathlength = scaleFactor*Norm*ClusterCharge/dedxHits->pathlength(h);
-           if(hipEmulator)ChargeOverPathlength = hipEmulator->fakeHIP(detid.subdetId(), ChargeOverPathlength);
+           double ChargeOverPathlength = ClusterCharge*scaleFactor*3.61e-6/dedxHits->pathlength(h);
 
-           vect.push_back(ChargeOverPathlength); //save charge
-           if(detid.subdetId()< 3)vectPixel.push_back(ChargeOverPathlength);
-           if(detid.subdetId()>=3)vectStrip.push_back(ChargeOverPathlength);
+           if(detid.subdetId()< 3){
+              vect.push_back(ChargeOverPathlength); //save charge, but skip phase2 strips
+              vectPixel.push_back(ChargeOverPathlength);
+           }
+           if(detid.subdetId()>=4)vectStrip.push_back(ChargeOverPathlength);
 //           printf("%i - %f / %f = %f\n", h, scaleFactor*Norm*dedxHits->charge(h), dedxHits->pathlength(h), ChargeOverPathlength);
         }
-     }
-
-     if(dropLowerDeDxValue>0){
-         std::vector <double> tmp (vect.size());
-         std::copy (vect.begin(), vect.end(), tmp.begin());
-         std::sort(tmp.begin(), tmp.end(), std::greater<double>() );
-         int nTrunc = tmp.size()*dropLowerDeDxValue;
-         vect.clear();
-         for(unsigned int t=0;t+nTrunc<tmp.size();t++){vect.push_back(tmp[t]);}
      }
 
      double result;
      int size = vect.size();
 
      if(size>0){
-        if(templateHisto){  //dEdx discriminator
+        if(pixel_TemplateHisto && strip_TemplateHisto){  //dEdx discriminator
            //Prod discriminator
            //result = 1;
            //for(int i=0;i<size;i++){
