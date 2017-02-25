@@ -244,8 +244,10 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH1::AddDirectory(kTRUE);
 
 
+   fprintf (stdout, "Loading the dE/dx Templates ... "); fflush (stdout);
    TH3F* pixel_dEdxTemplates      = loadDeDxTemplate (DIRNAME + "/../../../data/dEdxTemplate_MC140.root", false, true);
    TH3F* strip_dEdxTemplates      = loadDeDxTemplate (DIRNAME + "/../../../data/dEdxTemplate_MC140_Phase2.root", true, true);
+   fprintf (stdout, "Done!\n"); fflush (stdout);
    bool isSignal                  = false;
    if (INPUT.find("uino")!=std::string::npos
     || INPUT.find("stau")!=std::string::npos) isSignal = true;
@@ -275,6 +277,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    perTrackHistos hists;
    
    // FILE LOOP
+   fprintf (stdout, "Beginning to loop over files ...\n"); fflush (stdout);
    for(unsigned int f=0;f<FileName.size();f++){
      TFile* file = TFile::Open(FileName[f].c_str() );
      if (!file) continue;
@@ -288,7 +291,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
      // EVENT LOOP
      for(ev.toBegin(); !ev.atEnd(); ++ev){
          double percentage = (iev*1.0)/ev.size();
-         if ((unsigned int) (100*percentage) != (unsigned int) (100*percentageOld)){
+         if (percentage != percentageOld){
             percentageOld = percentage;
             if (bar) delete [] bar;
             bar = getProgressBar (percentage, 60);
@@ -787,7 +790,7 @@ char* getProgressBar (double percentage, unsigned int barLength)
    char* bar = new char [barLength+8];
    sprintf (bar, "[");
    unsigned int i = 0;
-   for (; i < (unsigned int) (percentage*barLength) - 1; i++)
+   for (; i+1 < (unsigned int) (percentage*barLength); i++)
       sprintf (bar, "%s=", bar);
    sprintf (bar, "%s%c", bar, percentage<0.99?'>':'=');
    for (; i < barLength-1; i++)

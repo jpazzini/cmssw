@@ -21,7 +21,6 @@ if len(sys.argv)==1:
         print "Please pass in argument a number between 1 and 3"
         print "  1  - Run dEdxStudy on RECO, AOD, or dEdxSKIM files         --> submitting 1job per file"
         print "  2  - Hadd root files containing the histograms             --> interactive processing" 
-        print "  3  - run the plotter on the hadded root files              --> interactive processing" 
         sys.exit()
 
 
