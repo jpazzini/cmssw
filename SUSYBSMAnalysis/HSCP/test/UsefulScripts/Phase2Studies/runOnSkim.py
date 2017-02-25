@@ -29,9 +29,9 @@ if len(sys.argv)==1:
         sys.exit()
 
 
-
+# root://ingrid-se03.cism.ucl.ac.be/store/user/jozobec/Phase2/MinBias_200PU_TuneCUETP8M1_14TeV
 datasetList = [
-  ["MCMinBias_140PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
+  ["MCMinBias_140PU", "/store/user/jozobec/Phase2/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
   ["MCMinBias_200PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/"],
 ]
 
@@ -60,9 +60,10 @@ if sys.argv[1]=='1':
                  initProxy()
                  initCommand = 'export X509_USER_PROXY=~/x509_user_proxy/x509_proxy; voms-proxy-init --noregen;'
                  LaunchOnCondor.Jobs_InitCmds = [initCommand]
-                 print initCommand+'lcg-ls -b -D srmv2 "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}'
-                 print commands.getstatusoutput(initCommand+'lcg-ls -b -D srmv2 "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')
-                 LocalFileList = commands.getstatusoutput(initCommand+'lcg-ls -b -D srmv2 "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')[1].split('\n')
+
+                 print initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}'
+                 print commands.getstatusoutput(initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')
+                 LocalFileList = commands.getstatusoutput(initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')[1].split('\n')
                  for f in LocalFileList:
                     if(f[-5:].find('.root')==-1):continue #only .root file considered
                     FILELIST += ["root://cms-xrd-global.cern.ch/"+DATASET[1].replace('/storage/data/cms/store/','/store/')+f]

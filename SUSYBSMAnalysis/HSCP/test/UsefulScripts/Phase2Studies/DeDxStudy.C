@@ -21,6 +21,7 @@
 #include "TCutG.h"
 #include "TGraphAsymmErrors.h"
 #include "TProfile.h"
+#include "TProfile3D.h"
 #include "TPaveText.h"
 
 namespace reco    { class Vertex; class Track; class GenParticle; class DeDxData; class MuonTimeExtra;}
@@ -78,6 +79,7 @@ const int    Charge_NBins        = 500 ;
 struct perTrackHistos 
 {
     TH1F * chi2                 = new TH1F ("chi2","chi2;#Chi^{2}/ndof;;",50,0,5);
+    TH1F * dist                 = new TH1F ("dist","dist;track dist. wrt HSCP;;",60,0,3);
 
     TH1I * dEdXHits             = new TH1I ("dEdXHits","dEdXHits;dE/dX clusters;;",40,0,40);
     TH1I * pixelHits            = new TH1I ("pixelHits","pixelHits;pixel clusters;;",40,0,40);
@@ -135,6 +137,8 @@ struct dEdxStudyObj
    TH3D* Charge_Vs_Path;
    TH3D* Charge_Vs_Path_Phase2;
    TH3D* HdedxVsNOMCalib;
+   TH3D* HdedxVsHit;
+   TH3D* HdedxVsHitOT;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
    TH2D* HdedxVsPSyst;
@@ -198,6 +202,8 @@ struct dEdxStudyObj
          HistoName = Name + "_MIP";               HdedxMIP              = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_dedxVsP";           HdedxVsP              = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_dedxVsPSyst";       HdedxVsPSyst          = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
+         HistoName = Name + "_HitProfile";        HdedxVsHit     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
+         HistoName = Name + "_HitOTProfile";      HdedxVsHitOT     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits over threshold;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
          HistoName = Name + "_Profile";           HdedxVsPProfile       = new TProfile(  HistoName.c_str(), HistoName.c_str(),   50, 0,100);
          HistoName = Name + "_Eta";               HdedxVsEtaProfile     = new TProfile(  HistoName.c_str(), HistoName.c_str(),   60,-3,  3);
          HistoName = Name + "_dedxVsNOH";         HdedxVsNOH            = new TProfile(  HistoName.c_str(), HistoName.c_str(),   80, 0, 80);
@@ -238,8 +244,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH1::AddDirectory(kTRUE);
 
 
-   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140.root", false, true);
-   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("../../../data/dEdxTemplate_MC140_Phase2.root", true, true);
+   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("dEdxTemplate_MC140.root", false, true);
+   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("dEdxTemplate_MC140_Phase2.root", true, true);
    bool isSignal                  = false;
    if (INPUT.find("uino")!=std::string::npos
     || INPUT.find("stau")!=std::string::npos) isSignal = true;
@@ -320,6 +326,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
             if (isSignal){
                 const std::vector<reco::GenParticle>& genColl = *genCollHandle;
+                hists.dist->Fill(DistToHSCP (track, genColl));
                 if (DistToHSCP (track, genColl)>0.03) continue;
             }
             
@@ -480,9 +487,22 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                    results[R]->HdedxVsEta        ->Fill(track->eta(), dedxObj.dEdx() );
                    results[R]->HdedxVsP          ->Fill(track  ->p(), dedxObj.dEdx() );
                    results[R]->HdedxMIP          ->Fill(dedxObj.dEdx());
+
+		            const std::vector <SiPixelCluster> pixels = dedxHits->pixelClusters();
+		            const std::vector <SiStripCluster> strips = dedxHits->stripClusters();
+		            const std::vector <Phase2TrackerCluster1D> phase2s = dedxHits->phase2TrackerCluster1D();
+		            unsigned int phase2sHoT = 0;
+		            for (auto & it : phase2s ){
+		                if ( it.threshold() > 0 ) ++phase2sHoT;
+		            }
+
+                   // results[R]->HdedxVsHit ->Fill(dedxHits->size(), pixels.size(), phase2s.size(), dedxObj.dEdx());
+                   results[R]->HdedxVsHit ->Fill(pixels.size(), phase2s.size(), dedxObj.dEdx());
+                   results[R]->HdedxVsHitOT ->Fill(pixels.size(), phase2sHoT, dedxObj.dEdx());
+
                    // number of Pixel Hits, PS hits and the dEdx -- in the end we select the one with best resolution
                    if (track->pt() > 5){
-                      unsigned char PSHits = 0, PHits = 0;
+                      unsigned int PSHits = 0, PHits = 0;
                       for (unsigned int h=0;h<dedxHits->size();h++){
                          DetId detId (dedxHits->detId(h));
                          int disk, ring;
