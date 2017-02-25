@@ -139,6 +139,8 @@ struct dEdxStudyObj
    TH3D* HdedxVsNOMCalib;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
+   TH1D* HdedxMIP_test;
+   TH2D* HdedxVsP_test;
    TH2D* HdedxVsPSyst;
 //   TH2D* HdedxVsQP;
 //   TProfile2D* HdedxVsP_NS;
@@ -199,6 +201,8 @@ struct dEdxStudyObj
          HistoName = Name + "_dedxVsNOMCalib";    HdedxVsNOMCalib       = new TH3D(      HistoName.c_str(), HistoName.c_str(), 12, 0, 12, 12, 0, 12, 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_MIP";               HdedxMIP              = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_dedxVsP";           HdedxVsP              = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
+         HistoName = Name + "_MIP_test";          HdedxMIP_test         = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
+         HistoName = Name + "_dedxVsP_test";      HdedxVsP_test         = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_dedxVsPSyst";       HdedxVsPSyst          = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_Profile";           HdedxVsPProfile       = new TProfile(  HistoName.c_str(), HistoName.c_str(),   50, 0,100);
          HistoName = Name + "_Eta";               HdedxVsEtaProfile     = new TProfile(  HistoName.c_str(), HistoName.c_str(),   60,-3,  3);
@@ -330,7 +334,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
             if(track->chi2()/track->ndof()>5 )continue;
 
             const std::vector<reco::GenParticle>& genColl = *genCollHandle;
-            if (DistToHSCP (track, genColl)>0.03) continue;
+            if (DistToHSCP (track, genColl)>0.03 && isSignal) continue;
 
             
             //load the track dE/dx hit info
@@ -489,35 +493,38 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                    results[R]->HdedxVsP          ->Fill(track  ->p(), dedxObj.dEdx() );
                    results[R]->HdedxMIP          ->Fill(dedxObj.dEdx());
                    // number of Pixel Hits, PS hits and the dEdx -- in the end we select the one with best resolution
-                   if (track->pt() > 5){
-                      unsigned char PSHits = 0, PHits = 0;
-                      for (unsigned int h=0;h<dedxHits->size();h++){
-                         DetId detId (dedxHits->detId(h));
-                         int disk, ring;
-                         switch (dedxHits->detId(h).subdetId())
-                         {
-                            // pixel
-                            case 1: case 2: PHits++;                              break;
-                            // strip barrel
-                            case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
-                            // strip endcap
-                            case 4:
-                                    disk = (int) (detId >> 18 & 0xF);
-                                    ring = (int) (detId >> 12 & 0x3F);
-                                    switch (disk){
-                                       case 1: case 2:         if (ring <= 9) PSHits++; break;
-                                       case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
-                                       default:
-                                                std::cerr << "Uknown disk!" << std::endl;
-                                    }
-                    
-                                    break;
-                            default:
-                                    std::cerr << "Not a tracker detId!" << std::endl;
-                                    exit (EXIT_FAILURE);
-                         }
+                   unsigned char PSHits = 0, PHits = 0;
+                   for (unsigned int h=0;h<dedxHits->size();h++){
+                      DetId detId (dedxHits->detId(h));
+                      int disk, ring;
+                      switch (dedxHits->detId(h).subdetId())
+                      {
+                         // pixel
+                         case 1: case 2: PHits++;                              break;
+                         // strip barrel
+                         case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
+                         // strip endcap
+                         case 4:
+                                 disk = (int) (detId >> 18 & 0xF);
+                                 ring = (int) (detId >> 12 & 0x3F);
+                                 switch (disk){
+                                    case 1: case 2:         if (ring <= 9) PSHits++; break;
+                                    case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
+                                    default:
+                                             std::cerr << "Uknown disk!" << std::endl;
+                                 }
+                   
+                                 break;
+                         default:
+                                 std::cerr << "Not a tracker detId!" << std::endl;
+                                 exit (EXIT_FAILURE);
                       }
+                   }
+                   if (track->pt() > 5)
                       results[R]->HdedxVsNOMCalib ->Fill(PHits, PSHits, dedxObj.dEdx());
+                   if (PHits >= 3 && PSHits >= 3 && track->found() >= 8){
+                      results[R]->HdedxMIP_test->Fill (dedxObj.dEdx());
+                      results[R]->HdedxVsP_test->Fill (track->p(), dedxObj.dEdx());
                    }
                 }
              }
