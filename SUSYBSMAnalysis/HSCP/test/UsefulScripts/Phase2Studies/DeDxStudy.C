@@ -64,6 +64,8 @@ bool isCompatibleWithCosmic (const reco::TrackRef& track, const std::vector<reco
 double GetMass (double P, double I, double K, double C);
 TH3F* loadDeDxTemplate(string path, bool isPhase2=false, bool splitByModuleType=false);
 reco::DeDxData computedEdx(const DeDxHitInfo* dedxHits, double* scaleFactors, TH3* templateHisto=NULL, TH3* strip_templateHisto=NULL, bool usePixel=false, bool reverseProb=false, bool useTruncated=false, bool useStrip=true);
+char* getProgressBar (double percentage, unsigned int barLength=100);
+void printProgressBar (const char* bar, const char* prefix=NULL);
 
 
 const double P_Min               = 1   ;
@@ -141,6 +143,8 @@ struct dEdxStudyObj
    TH3D* HdedxVsHitOT;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
+   TH1D* HdedxMIP_test;
+   TH2D* HdedxVsP_test;
    TH2D* HdedxVsPSyst;
 //   TH2D* HdedxVsQP;
 //   TProfile2D* HdedxVsP_NS;
@@ -201,6 +205,8 @@ struct dEdxStudyObj
          HistoName = Name + "_dedxVsNOMCalib";    HdedxVsNOMCalib       = new TH3D(      HistoName.c_str(), HistoName.c_str(), 12, 0, 12, 12, 0, 12, 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_MIP";               HdedxMIP              = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_dedxVsP";           HdedxVsP              = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
+         HistoName = Name + "_MIP_test";          HdedxMIP_test         = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
+         HistoName = Name + "_dedxVsP_test";      HdedxVsP_test         = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_dedxVsPSyst";       HdedxVsPSyst          = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_HitProfile";        HdedxVsHit     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
          HistoName = Name + "_HitOTProfile";      HdedxVsHitOT     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits over threshold;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
@@ -244,13 +250,14 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    TH1::AddDirectory(kTRUE);
 
 
-   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate ("dEdxTemplate_MC140.root", false, true);
-   TH3F* strip_dEdxTemplates      = loadDeDxTemplate ("dEdxTemplate_MC140_Phase2.root", true, true);
+   fprintf (stdout, "Loading the dE/dx Templates ... "); fflush (stdout);
+   TH3F* pixel_dEdxTemplates      = loadDeDxTemplate (DIRNAME + "/../../../data/dEdxTemplate_MC140.root", false, true);
+   TH3F* strip_dEdxTemplates      = loadDeDxTemplate (DIRNAME + "/../../../data/dEdxTemplate_MC140_Phase2.root", true, true);
+   fprintf (stdout, "Done!\n"); fflush (stdout);
+
    bool isSignal                  = false;
    if (INPUT.find("uino")!=std::string::npos
     || INPUT.find("stau")!=std::string::npos) isSignal = true;
-
-   if (INPUT.find("MinBias")<std::string::npos) isSignal = false;
 
    std::vector<string> FileName;
    if(INPUT.find(".root")<std::string::npos){
@@ -262,9 +269,9 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    }
 
    double dEdxSF [2];
+       dEdxSF [0]      = 1.0;
+       dEdxSF [1]      = 1.0;
    bool SuppressFakeHIP = false;
-       dEdxSF [0]      = 1.09711;
-       dEdxSF [1]      = 1.09256;
 
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
 
@@ -277,14 +284,26 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    perTrackHistos hists;
    
    // FILE LOOP
+   fprintf (stdout, "Beginning to loop over files ...\n"); fflush (stdout);
    for(unsigned int f=0;f<FileName.size();f++){
      TFile* file = TFile::Open(FileName[f].c_str() );
      if (!file) continue;
      if (file->IsZombie()) continue;
+
+     char prefix [50]; sprintf (prefix, "Processing file %u/%lu: ", f, FileName.size());
+     char* bar = NULL;
+     double percentageOld = -1.0;
+     size_t iev = 1;
      fwlite::Event ev(file);
      // EVENT LOOP
      for(ev.toBegin(); !ev.atEnd(); ++ev){
-
+         double percentage = (iev*1.0)/ev.size();
+         if (percentage != percentageOld){
+            percentageOld = percentage;
+            if (bar) delete [] bar;
+            bar = getProgressBar (percentage, 60);
+            printProgressBar (bar, prefix);
+         }
          fwlite::Handle<DeDxHitInfoAss> dedxCollH;
          dedxCollH.getByLabel(ev, "dedxHitInfo");
          if(!dedxCollH.isValid()){printf("Invalid dedxCollH\n");continue;}
@@ -437,8 +456,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                    int moduleGeometry = 1; // underflow bin -- debug purposes
 
                    for(unsigned int R=0;R<results.size();R++){
-//                      if (results[R]->Name.find("newCCC")!=string::npos){dEdxSF[0] = dEdxSF_NewCC[0]; dEdxSF[1] = dEdxSF_NewCC[1];}
-//                      else {dEdxSF[0] = dEdxSF_OldCC[0]; dEdxSF[1] = dEdxSF_OldCC[1];}
                       double scaleFactor = dEdxSF[0];
                       if (detid.subdetId()<3) scaleFactor *= dEdxSF[1];
                       double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
@@ -501,35 +518,39 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                    results[R]->HdedxVsHitOT ->Fill(pixels.size(), phase2sHoT, dedxObj.dEdx());
 
                    // number of Pixel Hits, PS hits and the dEdx -- in the end we select the one with best resolution
-                   if (track->pt() > 5){
-                      unsigned int PSHits = 0, PHits = 0;
-                      for (unsigned int h=0;h<dedxHits->size();h++){
-                         DetId detId (dedxHits->detId(h));
-                         int disk, ring;
-                         switch (dedxHits->detId(h).subdetId())
-                         {
-                            // pixel
-                            case 1: case 2: PHits++;                              break;
-                            // strip barrel
-                            case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
-                            // strip endcap
-                            case 4:
-                                    disk = (int) (detId >> 18 & 0xF);
-                                    ring = (int) (detId >> 12 & 0x3F);
-                                    switch (disk){
-                                       case 1: case 2:         if (ring <= 9) PSHits++; break;
-                                       case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
-                                       default:
-                                                std::cerr << "Uknown disk!" << std::endl;
-                                    }
-                    
-                                    break;
-                            default:
-                                    std::cerr << "Not a tracker detId!" << std::endl;
-                                    exit (EXIT_FAILURE);
-                         }
+                   unsigned char PSHits = 0, PHits = 0;
+                   for (unsigned int h=0;h<dedxHits->size();h++){
+                      DetId detId (dedxHits->detId(h));
+                      int disk, ring;
+                      switch (dedxHits->detId(h).subdetId())
+                      {
+                         // pixel
+                         case 1: case 2: PHits++;                              break;
+                         // strip barrel
+                         case 5: if ((int) (detId >> 20 & 0xF) <= 3) PSHits++; break;
+                         // strip endcap
+                         case 4:
+                                 disk = (int) (detId >> 18 & 0xF);
+                                 ring = (int) (detId >> 12 & 0x3F);
+                                 switch (disk){
+                                    case 1: case 2:         if (ring <= 9) PSHits++; break;
+                                    case 3: case 4: case 5: if (ring <= 7) PSHits++; break;
+                                    default:
+                                             std::cerr << "Uknown disk!" << std::endl;
+                                 }
+                   
+                                 break;
+                         default:
+                                 std::cerr << "Not a tracker detId!" << std::endl;
+                                 exit (EXIT_FAILURE);
+
                       }
+                   }
+                   if (track->pt() > 5)
                       results[R]->HdedxVsNOMCalib ->Fill(PHits, PSHits, dedxObj.dEdx());
+                   if (PHits >= 3 && PSHits >= 3 && track->found() >= 8){
+                      results[R]->HdedxMIP_test->Fill (dedxObj.dEdx());
+                      results[R]->HdedxVsP_test->Fill (track->p(), dedxObj.dEdx());
                    }
                 }
              }
@@ -610,6 +631,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 //                 }
 //              }
          } // END TRACK LOOP
+         iev++;
       } // END EVENT LOOP
       printf("\n");
       delete file;
@@ -785,3 +807,27 @@ TH3F* loadDeDxTemplate(string path, bool isPhase2, bool splitByModuleType){
    InputFile->Close();
    return Prob_ChargePath;
 }
+
+char* getProgressBar (double percentage, unsigned int barLength)
+{
+   char* bar = new char [barLength+8];
+   sprintf (bar, "[");
+   unsigned int i = 0;
+   for (; i+1 < (unsigned int) (percentage*barLength); i++)
+      sprintf (bar, "%s=", bar);
+   sprintf (bar, "%s%c", bar, percentage<0.99?'>':'=');
+   for (; i < barLength-1; i++)
+      sprintf (bar, "%s ", bar);
+   sprintf (bar, "%s] %u %% ", bar, (unsigned int) (100*percentage));
+   return bar;
+}
+
+void printProgressBar (const char* bar, const char* prefix)
+{
+   if (prefix)
+      fprintf (stdout, "\r%s%s", prefix, bar);
+   else
+      fprintf (stdout, "\r%s", bar);
+   fflush (stdout);
+}
+
