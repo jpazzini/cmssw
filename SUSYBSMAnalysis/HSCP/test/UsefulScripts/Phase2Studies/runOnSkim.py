@@ -9,9 +9,6 @@ import commands
 import json
 import collections # kind of map
 
-
-
-
 def getChunksFromList(MyList, n):
   return [MyList[x:x+n] for x in range(0, len(MyList), n)]
 
@@ -20,20 +17,21 @@ def initProxy():
       print "You are going to run on a sample over grid using either CRAB or the AAA protocol, it is therefore needed to initialize your grid certificate"
       os.system('mkdir -p ~/x509_user_proxy; voms-proxy-init --voms cms -valid 192:00 --out ~/x509_user_proxy/x509_proxy')#all must be done in the same command to avoid environement problems.  Note that the first sourcing is only needed in Louvain
 
-
 if len(sys.argv)==1:
         print "Please pass in argument a number between 1 and 3"
         print "  1  - Run dEdxStudy on RECO, AOD, or dEdxSKIM files         --> submitting 1job per file"
         print "  2  - Hadd root files containing the histograms             --> interactive processing" 
-        print "  3  - run the plotter on the hadded root files              --> interactive processing" 
         sys.exit()
 
 
-# root://ingrid-se03.cism.ucl.ac.be/store/user/jozobec/Phase2/MinBias_200PU_TuneCUETP8M1_14TeV
+
 datasetList = [
-  ["MCMinBias_140PU", "/store/user/jozobec/Phase2/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
+  ["MCMinBias_140PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/"],
   ["MCMinBias_200PU", "/storage/data/cms/store/user/jozobec/Phase2/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/"],
 ]
+
+remote_ls_command    = 'gfal-ls -l srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2\?SFN='
+remote_access_prefix = 'root://ingrid-se03.cism.ucl.ac.be//'
 
 isLocal = False  #allow to access data in Louvain from remote sites
 if(commands.getstatusoutput("hostname -f")[1].find("ucl.ac.be")!=-1): isLocal = True
@@ -58,15 +56,14 @@ if sys.argv[1]=='1':
       	         FILELIST = LaunchOnCondor.GetListOfFiles('', DATASET[1]+'/*.root', '')
               else:
                  initProxy()
-                 initCommand = 'export X509_USER_PROXY=~/x509_user_proxy/x509_proxy; voms-proxy-init --noregen;'
+                 initCommand = 'export X509_USER_PROXY=~/x509_user_proxy/x509_proxy; voms-proxy-init --noregen; '
                  LaunchOnCondor.Jobs_InitCmds = [initCommand]
-
-                 print initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}'
-                 print commands.getstatusoutput(initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')
-                 LocalFileList = commands.getstatusoutput(initCommand+'gfal-ls   "srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2?SFN='+DATASET[1]+'" | xargs -I {} basename {}')[1].split('\n')
+                 print initCommand + remote_ls_command + DATASET[1]+' | awk \'{print $9}\''
+                 print commands.getstatusoutput(initCommand + remote_ls_command+DATASET[1] + ' | awk \'{print $9}\'')
+                 LocalFileList = commands.getstatusoutput(initCommand + remote_ls_command + DATASET[1] + ' | awk \'{print $9}\'')[1].split('\n')
                  for f in LocalFileList:
                     if(f[-5:].find('.root')==-1):continue #only .root file considered
-                    FILELIST += ["root://cms-xrd-global.cern.ch/"+DATASET[1].replace('/storage/data/cms/store/','/store/')+f]
+                    FILELIST += [remote_access_prefix + DATASET[1].replace('/storage/data/cms/store/','/store/')+f]
            else: #file path is an HSCP sample name, use the name to run the job
               FILELIST += [DATASET[1]]
              
