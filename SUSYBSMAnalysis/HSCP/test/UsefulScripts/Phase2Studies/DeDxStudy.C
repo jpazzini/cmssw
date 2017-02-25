@@ -256,8 +256,8 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
    }
 
    double dEdxSF [2];
-       dEdxSF [0]      = 1.09711;
-       dEdxSF [1]      = 1.09256;
+       dEdxSF [0]      = 1.0;
+       dEdxSF [1]      = 1.0;
    bool SuppressFakeHIP = false;
 
    TFile* OutputHisto = new TFile((OUTPUT).c_str(),"RECREATE");  //File must be opened before the histogram are created
@@ -440,8 +440,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                    int moduleGeometry = 1; // underflow bin -- debug purposes
 
                    for(unsigned int R=0;R<results.size();R++){
-//                      if (results[R]->Name.find("newCCC")!=string::npos){dEdxSF[0] = dEdxSF_NewCC[0]; dEdxSF[1] = dEdxSF_NewCC[1];}
-//                      else {dEdxSF[0] = dEdxSF_OldCC[0]; dEdxSF[1] = dEdxSF_OldCC[1];}
                       double scaleFactor = dEdxSF[0];
                       if (detid.subdetId()<3) scaleFactor *= dEdxSF[1];
                       double Norm = (detid.subdetId()<3)?3.61e-06:3.61e-06*265;
