@@ -283,7 +283,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
      if (!file) continue;
      if (file->IsZombie()) continue;
 
-     char prefix [50]; sprintf (prefix, "Processing file %u/%lu: ", f, FileName.size());
+     char prefix [50]; sprintf (prefix, "Processing file % d/%lu: ", (int) f, FileName.size());
      char* bar = NULL;
      double percentageOld = -1.0;
      size_t iev = 1;
