@@ -4,8 +4,9 @@ import string, os, sys
 import SUSYBSMAnalysis.HSCP.LaunchOnCondor as LaunchOnCondor
 
 datasets     = [
-#   '/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
-#   '/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/MinBias_noPU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-NoPU_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
    '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-NoPU_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
    '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO',
    '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO',
@@ -16,19 +17,27 @@ datasets     = [
 
 outdir          = 'out'
 server          = 'root://cms-xrd-global.cern.ch/'
-storageDir      = "/storage/data/cms/store/user/jozobec/Phase2"
+storageDir      = "/storage/data/cms/store/user/jozobec/Phase2HSCP"
 storageTransfer = True
 
 def outDirName (dataset):
-    return dataset.split('/')[1]
+    outName = dataset.split('/')[1]
+    if outName.find('PU') == -1 and dataset.find('PU') != -1:
+       if dataset.find('140PU') != -1:
+          outName += '_140PU'
+       elif dataset.find('200PU') != -1:
+          outName += '_200PU'
+       elif dataset.find('NoPU') != -1:
+          outName += '_NoPU'
+    return outName
    
 def getDatasetFiles (dataset):
     return os.popen('das_client --limit=0 --query "file dataset=%s"' % dataset).read().split()
 
 def createOutStructure ():
     transferDir = outdir if not storageTransfer else storageDir
-    os.system ('rm -rf %s' % transferDir)
     for dataset in datasets:
+        os.system ('rm -rf %s/%s' % (transferDir, outDirName (dataset)))
         os.system ('mkdir -p %s/%s' % (transferDir, outDirName (dataset)))
 
 def initProxy():
