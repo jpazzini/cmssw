@@ -4,8 +4,14 @@ import string, os, sys
 import SUSYBSMAnalysis.HSCP.LaunchOnCondor as LaunchOnCondor
 
 datasets     = [
-   '/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
-   '/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+#   '/MinBias_140PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+#   '/MinBias_200PU_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-NoPU_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO',
+   '/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO',
+   '/TTTo2L2Nu_TuneCUETP8M1_14TeV-powheg-pythia8/PhaseIIFall16DR82-NoPU_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO',
+   '/TTTo2L2Nu_TuneCUETP8M1_14TeV-powheg-pythia8/PhaseIIFall16DR82-PU140_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO',
+   '/TTTo2L2Nu_TuneCUETP8M1_14TeV-powheg-pythia8/PhaseIIFall16DR82-PU200_90X_upgrade2023_realistic_v1_ext1-v1/GEN-SIM-RECO'
 ]
 
 outdir          = 'out'
@@ -20,9 +26,10 @@ def getDatasetFiles (dataset):
     return os.popen('das_client --limit=0 --query "file dataset=%s"' % dataset).read().split()
 
 def createOutStructure ():
-    os.system ('rm -rf %s && mkdir %s' % (outdir, outdir))
+    transferDir = outdir if not storageTransfer else storageDir
+    os.system ('rm -rf %s' % transferDir)
     for dataset in datasets:
-        os.system ('mkdir -p %s/%s' % (outdir, outDirName (dataset)))
+        os.system ('mkdir -p %s/%s' % (transferDir, outDirName (dataset)))
 
 def initProxy():
       print "You are going to run on a sample over grid using either CRAB or the AAA protocol, it is therefore needed to initialize your grid certificate"
@@ -41,7 +48,6 @@ if sys.argv[1] == '1':
 
    for dataset in datasets:
       datasetMark = outDirName (dataset)
-      os.system('mkdir -p %s/%s' % (storageDir, datasetMark))
       print '===========================================================\n%s\n' % datasetMark
       Files = getDatasetFiles(dataset)
       for i in range (0, len(Files)):
@@ -52,7 +58,7 @@ if sys.argv[1] == '1':
          f.write ('process.source.fileNames.extend([\'%s/%s\'])\n' % (server,Files[i]))
          f.close()
          if storageTransfer:
-            LaunchOnCondor.Jobs_FinalCmds = ["lcg-cp -v -n 10 -D srmv2 -b file://${PWD}/dEdxSkim_%s_%i.root srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2\?SFN=%s/%s/dEdxSkim_%s_%i.root && rm -f dEdxSkim_%s_i%.root" % (datasetMark, i, storageDir, datasetMark, datasetMark, i, datasetMark, i)] # if you do not use zsh, change '\?' to '?'
+            LaunchOnCondor.Jobs_FinalCmds = ["gfal-copy file:////${PWD}/dEdxSkim_%s_%i.root srm://ingrid-se02.cism.ucl.ac.be:8444/srm/managerv2\?SFN=%s/%s/dEdxSkim_%s_%i.root && rm -f dEdxSkim_%s_i%.root" % (datasetMark, i, storageDir, datasetMark, datasetMark, i, datasetMark, i)] # if you do not use zsh, perhaps change '\?' to '?'
          else:
             LaunchOnCondor.Jobs_FinalCmds = ['mv dEdxSkim*.root %s/%s/%s/' % (os.getcwd(), outdir, datasetMark)]
          LaunchOnCondor.SendCluster_Push (["CMSSW", "dEdxSkimmer_cff.py"])
