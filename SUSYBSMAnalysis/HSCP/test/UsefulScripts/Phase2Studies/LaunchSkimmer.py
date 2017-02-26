@@ -23,11 +23,11 @@ storageTransfer = True
 def outDirName (dataset):
     outName = dataset.split('/')[1]
     if outName.find('PU') == -1 and dataset.find('PU') != -1:
-       if dataset.find('140PU') != -1:
+       if dataset.find('140PU') != -1 or dataset.find('PU140') != -1:
           outName += '_140PU'
-       elif dataset.find('200PU') != -1:
+       elif dataset.find('200PU') != -1 or dataset.find('PU200') != -1:
           outName += '_200PU'
-       elif dataset.find('NoPU') != -1:
+       elif dataset.find('NoPU') != -1 or dataset.find('noPU') != -1:
           outName += '_NoPU'
     return outName
    
