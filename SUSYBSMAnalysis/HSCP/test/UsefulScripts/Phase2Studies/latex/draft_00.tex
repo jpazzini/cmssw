@@ -1,0 +1,115 @@
+\documentclass[11pt,twoside,a4paper]{article}
+
+\usepackage{rotating,booktabs,graphicx}
+
+\title{HSCP for Phase2 Trk TDR}
+
+\begin{document}
+
+\section{Introduction}
+
+Several theoretical extentions of the Standard Model (SM), including Super Symmetry (split SUSY and MSSM), Gauge mediated Symmetry Breaking (GMSB), Hidden-Valley, Extra dimensions, and several others, predict the existance of heavy particles with long lifetime.
+If produced with lifetime larger that a few nanoseconds, these heavy stable (or quasi-stable) charged particles (HSCPs), can pass through part (or the totality) of the detector before decaying, and therefore appear stable like pions or kaons.
+Depending on the mass and the charge of the HSCP particle, anomalously high rates of energy losses through ionization ($\mathrm{d}E/\mathrm{d}x$) with respect to the typical energy loss for SM particles ($\approx 3 \mathrm{MeV}/\mathrm{cm}$ for particles with 10-1000 GeV momentum) can be expected. 
+This feature allows for a sensitivity to massive particles with lower velocity ($\beta = v/c$) compared to SM particles, or to particles with charge $\mathrm{Q} > 1|e|$.
+
+\section{Samples and Event Selection}
+
+Two benchkarm scenarios are employed to account for a wider range of signatures of HSCP production at LHC.
+
+A first signal is pair production of gluino ($\tilde{g}$) that interact via the strong interaction and hadronize with SM quarks to form R-hadrons. 
+Signal gluino have been generated with masses in the range 600-2600 GeV under the Split SUSY scenarios.
+Gluinos are generated under the high squark mass (10 TeV) assumption using PYTHIA v8.xxx [35] with the default tune CUETP8M1.
+The fraction, $f$ , of produced $\tilde{g}$ hadronizing into a $\tilde{g}$-g state (R-gluonball) is an unknown parameter of the hadronization model and affects the fraction of R-hadrons that are neutral at production. 
+For this study results are obtained for $f = 0.1$.
+
+The second kind of signal consists of lepton-like HSCPs. 
+The benchmark chosen for lepton-like HSCP is the minimal gauge mediated supersymmetry breaking (mGMSB) model, where production of supersymmetric quasi-stable leptons ($\tilde{\tau}$) can proceed either directly or via production of heavier supersymmetric particles (mainly squarks and gluino
+pairs) further decaying to one or more $\tilde{\tau}$ particles. 
+The mGMSB model is chosed as benchmark using the SPS7 slope, which has the stau as the next-to-lightest supersymmetric particle (NLSP). 
+The particle mass spectrum and the decay table are produced with the program ISASUGRA version 7.69. The mGMSB parameter $\Lambda$ is varied from 31 to
+160 TeV, with fixed parameters $\mathrm{N}_{\mathrm{mes}} = 3$, $\tan \beta = 10$, $\mu > 0$, $\mathrm{C}_{\mathrm{grav}} = 10000$, and $\mathrm{M}_{\mathrm{mes}}/\Lambda = 2$. 
+The large value of $\mathrm{C}_{\mathrm{grav}}$ results in a long-lived stau, while $\Lambda = 31-510$ TeV gives a stau mass of 200 to
+1600 GeV. 
+Signal is generated using PYTHIA v8.xxx with the default tune CUETP8M1.
+
+Backgroud samples have been used to simulate tracks produced as the result of proton-proton interactions in the CMS detector.
+For this purpose, Minimum Bias samples have been used, generated 
+To simulate the effect of high transverse momentum muons traversing the detector, a samples of Drell-Yan production is also used.
+
+
+All the signal and backgroud samples used in this analysis have been subjected to the full simulation of the CMS detector with the 2023-D4 geometry. 
+
+\begin{sidewaystable}
+\small
+\centering
+\caption{Simulated samples used for this study. All the samples have been produced in three different pile-up configurations: NoPU, 140PU, and 200PU.\label{tab:samples}}
+\begin{tabular}{ll}
+\toprule
+Sample & $\sigma$ \\
+\midrule
+\verb|/HSCPgluino_M_600_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPgluino_M_1000_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPgluino_M_1800_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPgluino_M_1400_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPgluino_M_2600_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v2/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPgluino_M_2200_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\midrule
+\verb|/HSCPppstau_M_200_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPppstau_M_432_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPppstau_M_651_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPppstau_M_871_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO| 	& xxx \\
+\verb|/HSCPppstau_M_1218_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/HSCPppstau_M_1599_TuneCUETP8M1_14TeV_pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\midrule
+\verb|/MinBias_*_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|		& xxx \\
+\midrule
+\verb|/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\bottomrule
+\end{tabular}
+\end{sidewaystable}
+
+Signal events are selected requiring the reconstruction of a muon with transverse momentum $p_{\mathrm{T}} > 55$ GeV, as reconstructed form the particle-flow algorithm.
+
+All events are further required to have a candidate track with $p_{\mathrm{T}} > 55$ GeV (as measured in the tracker detector only), with a relative uncertainty on $p_{\mathrm{T}}$ less than 25\%, pseudorapidity in the tracker acceptance $|\eta| < 4$, track fit $\chi^2/\mathrm{dof} < 5$, and magnitudes of the longitudinal and transverse impact parameters with respect to the primary vertex less than 0.5 cm. 
+Candidates tracks must have at least XXX measurements in the silicon pixel detector.
+
+\section{Ionizing Particle Discriminator}
+
+An estimator of the degree of compatibility of the track with the hypothesis of it being generated by a MIP is defined.
+The $\mathrm{d}E/\mathrm{d}x$ discriminator $I_{\mathrm{as}}$ is define as:
+
+$$
+I_{\mathrm{as}} = \frac{3}{N} \times \left( \frac{1}{12N} + \sum_{i=1}^{N} \left[ P_i \times \left( P_i - \frac{2i-1}{2N} \right)^2 \right] \right)
+$$
+
+where $N$ is the number of measurements in the silicon-tracker detectors, $P_i$ is the probability for a minimum-ionizing particle to produce a charge smaller or equal to that of the $i$-th measurement for the observed path length in the detector, and the sum is over the track measurements ordered in terms of increasing $P_i$.
+
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{figures/dummy.pdf}
+\caption{DeDxVsP\label{fig:dedxvsp}}
+\end{figure}
+
+The HSCP candidates are selected using the $I_{\mathrm{as}}$ discriminator by requiring tracks with  criteria are $p_{\mathrm{T}} > 65$ GeV and $I_{\mathrm{as}} > 0.3$. 
+The backgound yield is estimated from the MinBias and DYJets samples with a "ABCD" procedure by correcting the number of events passing the $I_{\mathrm{as}}$ requirement only, for the ratio of the events yields passing the $p_{\mathrm{T}}$ requirement only divided by the number of events failing both requirements.
+
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{figures/dummy.pdf}
+\caption{ROC\label{fig:roc}}
+\end{figure}
+
+\section{Expected Limits}
+
+The expected perfomances of the analyis in absence of signal are shown in terms of cross-section reach, defined as the cross-section for which we expect to observe signal with a significance of at least 5 standard deviations (5$\sigma$).
+The results are presented for the three pileup scenarios (NoPU, 140PU, 200PU) for an integrated luminosity of 3000 $\mathrm{fb}^{-1}$.
+
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{figures/dummy.pdf}
+\caption{Limit\label{fig:limit}}
+\end{figure}
+
+\end{document}
+
