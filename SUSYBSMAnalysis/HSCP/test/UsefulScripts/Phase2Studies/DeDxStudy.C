@@ -138,13 +138,10 @@ struct dEdxStudyObj
 
    TH3D* Charge_Vs_Path;
    TH3D* Charge_Vs_Path_Phase2;
-   TH3D* HdedxVsNOMCalib;
-   TH3D* HdedxVsHit;
-   TH3D* HdedxVsHitOT;
    TH1D* HdedxMIP;
    TH2D* HdedxVsP;
-   TH1D* HdedxMIP_test;
-   TH2D* HdedxVsP_test;
+   TH1D*** HdedxMIP_test;
+   TH2D*** HdedxVsP_test;
    TH2D* HdedxVsPSyst;
 //   TH2D* HdedxVsQP;
 //   TProfile2D* HdedxVsP_NS;
@@ -202,11 +199,8 @@ struct dEdxStudyObj
 
       //Track Level plots
       if(isEstim || isDiscrim){
-         HistoName = Name + "_dedxVsNOMCalib";    HdedxVsNOMCalib       = new TH3D(      HistoName.c_str(), HistoName.c_str(), 12, 0, 12, 12, 0, 12, 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_MIP";               HdedxMIP              = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
          HistoName = Name + "_dedxVsP";           HdedxVsP              = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
-         HistoName = Name + "_MIP_test";          HdedxMIP_test         = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
-         HistoName = Name + "_dedxVsP_test";      HdedxVsP_test         = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_dedxVsPSyst";       HdedxVsPSyst          = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
          HistoName = Name + "_HitProfile";        HdedxVsHit     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
          HistoName = Name + "_HitOTProfile";      HdedxVsHitOT     		= new TH3D(		 HistoName.c_str(), Form("%s;pixel hits;strip hits over threshold;dE/dx",HistoName.c_str()),   60, 0, 60,  60, 0, 60, 1000, 0, isDiscrim?1.0:15);
@@ -220,6 +214,21 @@ struct dEdxStudyObj
          HistoName = Name + "_NOM";               HNOMVsEtaProfile      = new TProfile(  HistoName.c_str(), HistoName.c_str(),   60,-3,  3);
          HistoName = Name + "_NOMS";              HNOMSVsEtaProfile     = new TProfile(  HistoName.c_str(), HistoName.c_str(),   60,-3,  3);
          HistoName = Name + "_P";                 HP                    = new TH1D(      HistoName.c_str(), HistoName.c_str(),   50, 0, 100);  
+
+         HdedxMIP_test = new TH1D** [12];
+         HdedxVsP_test = new TH2D** [12];
+         for (unsigned int i=0; i<12; i++){
+            HdedxMIP_test [i] = new TH1D* [12];
+            HdedxVsP_test [i] = new TH2D* [12];
+
+            for (unsigned int j=0; j<12; j++){
+               char tmp1[50], tmp2[50];
+               sprintf (tmp1, "_MIP_test_%u_%u", i+1, j+1);
+               sprintf (tmp2, "_dedxVsP_test_%u_%u", i+1, j+1);
+               HistoName = Name + string(tmp1);    HdedxMIP_test[i][j]  = new TH1D(      HistoName.c_str(), HistoName.c_str(), 1000, 0, isDiscrim?1.0:25);
+               HistoName = Name + string(tmp2);    HdedxVsP_test[i][j]  = new TH2D(      HistoName.c_str(), HistoName.c_str(),  500, 0, 10,1000,0, isDiscrim?1.0:15);
+            }
+         }   
       }
 
       //estimator plot only
@@ -290,7 +299,7 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
      if (!file) continue;
      if (file->IsZombie()) continue;
 
-     char prefix [50]; sprintf (prefix, "Processing file %u/%lu: ", f, FileName.size());
+     char prefix [50]; sprintf (prefix, "Processing file %2u/%lu: ", f, FileName.size());
      char* bar = NULL;
      double percentageOld = -1.0;
      size_t iev = 1;
@@ -479,11 +488,6 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
                       }
                       results[R]->HHit->Fill(ChargeOverPathlength);
 
-//                       if (fabs(track->eta())<0.4){
-//                          results[R]->HHitProfile->Fill(track->p(), ChargeOverPathlength);
-//                          results[R]->HHitProfile_U->Fill(track->p(), ChargeOverPathlength_U);
-//                       }
-
                       if(results[R]->usePixel && results[R]->useStrip){
                          
                          if     (detid.subdetId() < 3)results[R]->Charge_Vs_Path        ->Fill (moduleGeometry, dedxHits->pathlength(h)*10, scaleFactor * charge/(dedxHits->pathlength(h)*10*265)); 
@@ -546,11 +550,11 @@ void DeDxStudy(string DIRNAME="COMPILE", string INPUT="dEdx.root", string OUTPUT
 
                       }
                    }
-                   if (track->pt() > 5)
-                      results[R]->HdedxVsNOMCalib ->Fill(PHits, PSHits, dedxObj.dEdx());
-                   if (PHits >= 3 && PSHits >= 3 && track->found() >= 8){
-                      results[R]->HdedxMIP_test->Fill (dedxObj.dEdx());
-                      results[R]->HdedxVsP_test->Fill (track->p(), dedxObj.dEdx());
+                   for (unsigned char i=0; i < std::min<unsigned char>(PHits,12,std::less<unsigned char>()); i++){
+                      for (unsigned char j=0; j < std::min<unsigned char>(PSHits,12,std::less<unsigned char>()); j++){
+                         results[R]->HdedxMIP_test[i][j]->Fill (dedxObj.dEdx());
+                         results[R]->HdedxVsP_test[i][j]->Fill (track->p(), dedxObj.dEdx());
+                      }
                    }
                 }
              }
@@ -818,7 +822,7 @@ char* getProgressBar (double percentage, unsigned int barLength)
    sprintf (bar, "%s%c", bar, percentage<0.99?'>':'=');
    for (; i < barLength-1; i++)
       sprintf (bar, "%s ", bar);
-   sprintf (bar, "%s] %u %% ", bar, (unsigned int) (100*percentage));
+   sprintf (bar, "%s] %3u %% ", bar, (unsigned int) (100*percentage));
    return bar;
 }
 
