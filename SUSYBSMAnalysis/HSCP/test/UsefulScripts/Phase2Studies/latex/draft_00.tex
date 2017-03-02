@@ -30,12 +30,14 @@ The particle mass spectrum and the decay table are produced with the program ISA
 The large value of $\mathrm{C}_{\mathrm{grav}}$ results in a long-lived stau, while $\Lambda = 31-510$ TeV gives a stau mass of 200 to 1600 GeV. 
 Signal is generated using PYTHIA v8.xxx with the default tune CUETP8M1.
 
-SM background samples have been used to simulate tracks produced as the result of proton-proton interactions in the CMS detector.
+SM background samples have been used to simulate MIP tracks produced as the result of proton-proton interactions in the CMS detector.
 For this purpose, Minimum Bias samples have been used, generated assuming a proton-proton inelastic cross section of xxx mb.
-To simulate high transverse momentum muons traversing the detector, a samples of Drell-Yan production is also used, to exploit muons from the leptonic Z boson decay.
+
+To simulate high transverse momentum muons traversing the detector, a samples of Drell-Yan production is also used, to exploit muons from the leptonic Z boson decay, as well as leptonic decaying top quark pairs.
+Drell-Yan samples have been produced with the MadgraphMLM generator interfaced with PYTHIA to describe the hadronization, whereas the $\mathrm{t}\bar{\mathrm{t}}$ SM background the Powheg generator has been used, also in this case interfaced with PYTHIA8.
 
 All the signal and background samples used in this analysis have been subjected to the full simulation of the CMS detector with the phase 2 geometry (2023-D4) using GEANT 4. 
-For all samples, three different configuration have been produced, to account for additional events produced in association with the primary collision in the same beam crossing (pileup): no pileup, 140 pileup, and 200 pileup.
+For all signal and background samples, three different configuration have been produced to account for additional events produced in association with the primary collision in the same beam crossing (pileup): no pileup, 140 pileup, and 200 pileup.
 
 \begin{sidewaystable}
 \small
@@ -62,17 +64,19 @@ Sample & $\sigma$ \\
 \verb|/MinBias_*_TuneCUETP8M1_14TeV-pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|		& xxx \\
 \midrule
 \verb|/DYJetsToLL_M-50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8_ext1/PhaseIIFall16DR82-*_90X_upgrade2023_realistic_v1-v1/GEN-SIM-RECO|	& xxx \\
+\verb|/TTTo2L2Nu_TuneCUETP8M1_14TeV-powheg-pythia8/PhaseIIFall16DR82-*_90X_upgrade2023_realistic__v1_ext1-v1/GEN-SIM-RECO|	& xxx \\
 \bottomrule
 \end{tabular}
 \end{sidewaystable}
 
 \section{Event Selection}
 
-Events are selected by requiring the presence of at lease one muon with transverse momentum $p_{\mathrm{T}} > 55$ GeV, as reconstructed form the particle-flow algorithm to emulate a typical single muon trigger requirement.
+Events are selected by requiring the presence of at least one muon with high transverse momentum or an high missing transverse momentum $E_{\mathrm{T}}^{\mathrm{miss}}$ as reconstructed from the particle-flow algorithm, to emulate the typical trigger requirements applied for this analysis.
 Single muon triggers are especially indicated for lepton-like HSCPs, which interact weakly with the detector and thus are normally reconstructed as muons inside the detector.
-To help recover some efficiency for hadron-like HSCPs, for which R-hadrons can change charge as they propagate through the detector and become neutral within or outside the tracker, trigger relying on the missing transverse momentum reconstructed in the detector could be exploited, although not included in this study. 
+To recover some efficiency for hadron-like HSCPs, for which R-hadrons can change charge as they propagate through the detector and become neutral within or outside the tracker, online selection criteria relying on the missing transverse momentum reconstructed in the detector are also exploited to complement the single muon triggers.
+For the purpose of this study, online trigger performances similar to the ones of Run2 have been assumed, and events are retained only if fulfilling the offline selection cuts of having at least one muon with $p_{\mathrm{T}} > 55$ GeV or $E_{\mathrm{T}}^{\mathrm{miss}} > 200$ GeV, values for which the trigger is assumed to be fully efficient. 
 
-All events are further required to have a candidate track produced with $p_{\mathrm{T}} > 55$ GeV (as measured in the tracker detector only) in the tracker detector accept, with a relative uncertainty on $p_{\mathrm{T}}$ less than 25\%, pseudorapidity in the tracker acceptance $|\eta| < 4$, track fit $\chi^2/\mathrm{dof} < 5$, and magnitudes of the longitudinal and transverse impact parameters with respect to the primary vertex less than 0.5 cm. 
+Candidates HSCP are considered all the tracks with $p_{\mathrm{T}} > 55$ GeV (as measured in the tracker detector only) in the tracker detector accept, with a relative uncertainty on $p_{\mathrm{T}}$ less than 25\%, pseudorapidity in the tracker acceptance $|\eta| < 4$, track fit $\chi^2/\mathrm{dof} < 5$, and magnitudes of the longitudinal and transverse impact parameters with respect to the primary vertex less than 0.5 cm. 
 Candidates tracks must have at least XXX measurements in the silicon pixel detector.
 
 \begin{table}
@@ -94,10 +98,16 @@ Candidates tracks must have at least XXX measurements in the silicon pixel detec
  \end{tabular}
 \end{table}
 
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{figures/dummy.pdf}
+\caption{Signal efficiency versus the track pseudorapidity $\eta$.\label{fig:effeta}}
+\end{figure}
+
 
 \section{Ionizing Particle Discriminator}
 
-An estimator of the degree of compatibility of the track with the hypothesis of it being generated by a MIP is defined.
+An estimator of the degree of compatibility of the track with the hypothesis of it being generated by a MIP is defined in the analysis to separate candidate HSCP from tracks from SM background sources.
 The $\mathrm{d}E/\mathrm{d}x$ discriminator $I_{\mathrm{as}}$ is define as:
 
 $$
@@ -107,19 +117,30 @@ $$
 where $N$ is the number of measurements in the silicon-tracker detectors, $P_i$ is the probability for a minimum-ionizing particle to produce a charge smaller or equal to that of the $i$-th measurement for the observed path length in the detector, and the sum is over the track measurements ordered in terms of increasing $P_i$.
 
 Pixel measurements are used for the computation of the discriminator due to the high resolution of the $\mathrm{d}E/\mathrm{d}x$ measurements.
-The measurement produced by the silicon PS modules are instead exploited to add additional information to the already available $\mathrm{d}E/\mathrm{d}x$ measurements produced by the pixel [TO BE MODIFIED ACCORDING TO THE LATEST VERSION OF THE Ias IMPLEMENTATION].
+Strip modules provide a coarser $\mathrm{d}E/\mathrm{d}x$ information with respect to the pixel modules: a Hit-Over-Threshold information (HoT bit) is provided only in the case an energy deposit greater that $1.4$ times the one expected from a MIP is measured.
+For this reason, three different implementations of the $I_{\mathrm{as}}$ discriminator are implemented in order to investigate which strategy could exploit the most out of the PS modules information.
+
+\begin{itemize}
+ \item[i.]   Evaluate a simplified pixel-only discriminator to exploit the higher granularity of the pixel detector, and recompute $I_{\mathrm{as}}$ including the HoT bits only if the the pixel-only discriminator is above the threshold of XXX.
+ \item[ii.]  Define multiple discriminator templates based on MinBias depending on the multiplicity of HoT bits associated to the track
+ \item[iii.] Build different discriminators based on the  geometry type of APV modules
+\end{itemize}
+
+Receiver operating characteristic (ROC) curves have been evaluated to evaluate the strategy providing the best performances.
+% Signal samples have been exploited to measure the signal efficieny, while the SM backgound sample have been used to estimate the probability o
 
 \begin{figure}
 \centering
 \includegraphics[width=.5\textwidth]{figures/dummy.pdf}
-\caption{DeDxVsP\label{fig:dedxvsp}}
+\caption{$\mathrm{d}E/\mathrm{d}x$ profile versus the momentum of the track.\label{fig:dedxvsp}}
 \end{figure}
 
 \section{Background Estimation}
 
-The HSCP candidates are selected using the $I_{\mathrm{as}}$ discriminator by requiring tracks with  criteria are $p_{\mathrm{T}} > 65$ GeV and $I_{\mathrm{as}} > 0.3$ (region D). 
-The SM background is predicted relying on two non-correlated variables discriminating between signal and background.
-The background yield is in fact estimated from the Minimum Bias and Drell-Yan MC samples with a "ABCD" procedure by correcting the number of events passing the $I_{\mathrm{as}}$ requirement only (region B), for the ratio of the events yields passing the $p_{\mathrm{T}}$ requirement alone (region C) divided by the number of events failing both requirements (region A): D = BC/A.
+The HSCP candidates are selected using the $I_{\mathrm{as}}$ discriminator by requiring tracks with  criteria are $p_{\mathrm{T}} > 65$ GeV and $I_{\mathrm{as}} > 0.3$. 
+The SM background contribution is predicted relying on two non-correlated variables discriminating between signal and background.
+The background yield is in fact estimated from the Drell-Yan and $\mathrm{t}\bar{\mathrm{t}}$ MC samples with a "ABCD" procedure.
+The number of background events estimated in the signal region (region D) is obtained by correcting the number of events passing the $I_{\mathrm{as}}$ requirement only (region B), for the ratio of the events yields passing the $p_{\mathrm{T}}$ requirement alone (region C) divided by the number of events failing both requirements (region A).
 
 \begin{figure}
 \centering
